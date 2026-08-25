@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#120d0a">
+<!-- ===== PWA：manifest 與 Service Worker 由 vite-plugin-pwa 於建置時產生並注入 ===== -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DRIP MATRIX">
+<meta name="description" content="手沖咖啡萃取運算引擎：熱力補償、溶解率矩陣、濾杯幾何與注水節拍導航。">
+<title>DRIP MATRIX — Intelligent Pour-Over Engine</title>
+<style>
+/* ============================================================
+   設計系統：Espresso 深烘色系（非通用 zinc 灰）
+   ============================================================ */
+:root{
+  --bg:#120d0a;            /* 濃縮咖啡底色 */
+  --panel:#1c1510;         /* 面板 */
+  --panel2:#241b13;        /* 面板加亮 */
+  --line:#3a2c1f;          /* 邊線（咖啡渣色）*/
+  --text:#f2e8d9;          /* 奶泡白 */
+  --muted:#a08c74;         /* 淺褐 */
+  --crema:#d89b5a;         /* 金黃 Crema */
+  --copper:#c4763b;        /* 銅壺色 */
+  --hot:#e36b4f;           /* 水溫 */
+  --water:#7fb4d6;         /* 水量 */
+  --ok:#8fbf7f;            /* 完成綠 */
+  --mono:ui-monospace,'SF Mono','Cascadia Mono','JetBrains Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;
+  min-height:100dvh;line-height:1.5;
+  background-image:radial-gradient(ellipse 90% 40% at 50% -5%,rgba(216,155,90,.08),transparent);
+}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px 120px}
+/* Logo 置於品牌名左側，垂直跨越「主名 + 副標」兩行 */
+header{display:flex;align-items:center;justify-content:center;gap:14px;padding:22px 0 10px}
+header .logo{width:58px;height:58px;flex-shrink:0;color:var(--crema)}
+header .logo .ring{opacity:.32;transform-origin:50% 50%;animation:logospin 20s linear infinite}
+header .logo .rib{opacity:.5}
+@keyframes logospin{to{transform:rotate(360deg)}}
+header .brand{text-align:left}
+header h1{font-size:1.62rem;letter-spacing:.1em;color:var(--crema);font-weight:900;line-height:1.05}
+header p{color:var(--muted);font-family:var(--mono);font-size:.6rem;font-weight:600;letter-spacing:.16em;margin-top:5px}
+@media (max-width:360px){header .logo{width:48px;height:48px}header h1{font-size:1.35rem}header p{font-size:.53rem;letter-spacing:.1em}}
+
+/* ---- 卡片 ---- */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+.card h2{font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card h2 .no{font-family:var(--mono);font-size:.7rem;color:var(--bg);background:var(--crema);border-radius:6px;padding:2px 7px;font-weight:700}
+label{display:block;font-size:.72rem;color:var(--muted);margin:12px 0 5px}
+label b{color:var(--crema);font-weight:600}
+select,input[type=number]{
+  width:100%;background:var(--panel2);color:var(--text);
+  border:1px solid var(--line);border-radius:12px;padding:13px 12px;font-size:1rem;
+  appearance:none;-webkit-appearance:none;outline:none;
+}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d89b5a' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+select:focus,input:focus{border-color:var(--crema)}
+.hint{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.55}
+.hint em{color:var(--crema);font-style:normal}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.chip{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 13px;font-size:.78rem;cursor:pointer}
+.chip.on{border-color:var(--crema);color:var(--crema);background:rgba(216,155,90,.1)}
+
+/* ---- 風味滑桿 ---- */
+input[type=range]{width:100%;accent-color:var(--copper);height:26px}
+.tweak-labels{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);font-weight:600}
+.tweak-labels .lo{color:var(--water)}.tweak-labels .hi{color:var(--crema)}
+
+/* ---- 運算藍圖 ---- */
+.blueprint{background:linear-gradient(160deg,var(--panel2),var(--panel));border:1px solid var(--copper)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-bottom:12px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 4px}
+.stat .k{font-size:.62rem;color:var(--muted)}
+.stat .v{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-top:2px}
+.stat .v.temp{color:var(--hot)}.stat .v.water{color:var(--water)}
+.stat .v.grind{font-size:.72rem;font-family:inherit;line-height:1.3;padding-top:5px;color:var(--text)}
+.calc-log{font-size:.68rem;color:var(--muted);background:rgba(0,0,0,.3);border-radius:10px;padding:9px 11px;font-family:var(--mono);line-height:1.7}
+.calc-log b{color:var(--ok);font-weight:600}
+.reco{margin-top:10px;font-size:.75rem;background:rgba(127,180,214,.08);border:1px solid rgba(127,180,214,.25);border-radius:10px;padding:9px 11px;color:#bcd9ec}
+.warn{margin-top:10px;font-size:.75rem;background:rgba(227,107,79,.1);border:1px solid rgba(227,107,79,.4);border-radius:10px;padding:9px 11px;color:#f0b6a6;line-height:1.65}
+.warn b{color:var(--hot)}
+
+/* ---- 兌水降溫 ---- */
+.mix-out{margin-top:10px;background:var(--bg);border:1px dashed var(--copper);border-radius:12px;padding:12px;text-align:center}
+.mix-out .f{font-family:var(--mono);font-size:1.05rem;color:var(--crema);font-weight:700}
+.mix-out .s{font-size:.68rem;color:var(--muted);margin-top:4px}
+
+/* ---- 底部主按鈕 ---- */
+.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(18,13,10,.92);backdrop-filter:blur(10px);border-top:1px solid var(--line);z-index:50}
+.btn-main{display:block;width:100%;max-width:520px;margin:0 auto;background:linear-gradient(135deg,var(--copper),var(--crema));color:#1a120b;border:none;border-radius:14px;padding:16px;font-size:1.05rem;font-weight:900;letter-spacing:.1em;cursor:pointer;box-shadow:0 6px 24px rgba(196,118,59,.3)}
+.btn-main:active{transform:scale(.97)}
+
+/* ============================================================
+   沖煮導航頁
+   ============================================================ */
+#brewPage{display:none}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.link{background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;padding:6px 0}
+.toggles{display:flex;gap:8px}
+.tgl{background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:.72rem;padding:7px 10px;cursor:pointer}
+.tgl.on{color:var(--crema);border-color:var(--crema)}
+
+/* 節拍器指針圈（本 App 的招牌黑科技）*/
+.pacer{position:relative;width:250px;height:250px;margin:14px auto 6px}
+.pacer svg{transform:rotate(-90deg)}
+.pacer .ring-bg{stroke:var(--line);fill:none}
+.pacer .ring-fg{stroke:var(--crema);fill:none;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.pacer .center{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.pacer .live{font-family:var(--mono);font-size:3.4rem;font-weight:900;line-height:1;letter-spacing:-.03em}
+.pacer .live small{font-size:1.1rem;color:var(--muted);font-weight:600}
+.pacer .live small:empty{display:none}
+.pacer .cap{font-size:.68rem;color:var(--muted);margin-top:5px}
+.pacer .goal{font-family:var(--mono);font-size:.85rem;color:var(--water);margin-top:2px}
+.timer{text-align:center;font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--muted)}
+.timer.run{color:var(--text)}
+.timer.done{color:var(--ok)}
+
+.action-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px}
+.action-box .tag{font-size:.65rem;color:var(--crema);font-weight:700;letter-spacing:.15em}
+.action-box .act{font-size:1.1rem;font-weight:800;margin-top:4px}
+.flowline{display:flex;justify-content:space-between;align-items:center;background:rgba(127,180,214,.07);border:1px solid rgba(127,180,214,.2);border-radius:12px;padding:11px 14px;margin-top:10px}
+.flowline .fv{font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--water)}
+.tip{display:flex;gap:9px;background:var(--panel2);border-radius:12px;padding:11px;margin-top:10px;font-size:.8rem;color:var(--muted);line-height:1.6}
+.tip::before{content:"💡";flex-shrink:0}
+
+.ctrl{display:flex;justify-content:center;gap:22px;margin:22px 0 6px}
+.btn-round{width:64px;height:64px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:.85rem;font-weight:700;cursor:pointer}
+.btn-play{width:92px;height:92px;border-radius:50%;border:none;background:var(--crema);color:#1a120b;font-size:1.05rem;font-weight:900;cursor:pointer;box-shadow:0 0 34px rgba(216,155,90,.35)}
+.btn-play:disabled{opacity:.55}
+.btn-play.pause{background:rgba(227,107,79,.15);border:2px solid var(--hot);color:var(--hot);box-shadow:none}
+.btn-round:active,.btn-play:active{transform:scale(.94)}
+
+/* 全局藍圖橫條 */
+.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-top:10px}
+.strip::-webkit-scrollbar{height:5px}
+.strip::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+.seg{flex-shrink:0;width:118px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px}
+.seg.now{border-color:var(--crema);background:rgba(216,155,90,.12)}
+.seg.past{opacity:.4}
+.seg .t{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
+.seg .g{font-family:var(--mono);font-weight:800;font-size:.95rem;margin:2px 0}
+.seg .a{font-size:.64rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 完成 & 日誌 */
+.finish{display:none;background:rgba(143,191,127,.08);border:1px solid rgba(143,191,127,.4);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+.stars{font-size:1.7rem;letter-spacing:.15em;cursor:pointer;user-select:none;margin:8px 0}
+.stars span{color:#4a3a28}.stars span.lit{color:var(--crema)}
+.btn-sm{background:var(--panel2);border:1px solid var(--crema);color:var(--crema);border-radius:10px;padding:9px 18px;font-size:.85rem;font-weight:700;cursor:pointer}
+.log-item{border-bottom:1px dashed var(--line);padding:10px 2px;font-size:.75rem;color:var(--muted)}
+.log-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.log-name{color:var(--text);font-weight:700;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-star{color:var(--crema);flex-shrink:0}
+.log-meta{margin-top:3px;font-size:.68rem}
+.log-acts{display:flex;gap:6px;margin-top:7px}
+.btn-mini{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:.7rem;font-weight:700;cursor:pointer}
+.btn-mini.recall{border-color:var(--crema);color:var(--crema)}
+.btn-mini.del{border-color:rgba(227,107,79,.5);color:var(--hot)}
+.btn-mini:active{transform:scale(.93)}
+input[type=text]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:1rem;outline:none}
+.btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.step-head,.step-row{display:grid;grid-template-columns:1fr 52px 52px 38px 30px;gap:6px;align-items:center}
+.step-head{font-size:.62rem;color:var(--muted);margin:8px 0 4px;text-align:center}
+.step-head span:first-child{text-align:left}
+.step-row{margin-bottom:6px}
+.step-row input[type=text],.step-row input[type=number]{padding:9px 8px;font-size:.82rem;border-radius:9px}
+.step-row input[type=number]{text-align:center;padding-left:2px;padding-right:2px}
+.step-row .chk{width:100%;height:34px;accent-color:var(--crema)}
+.step-row .rm{background:none;border:none;color:var(--hot);font-size:1.05rem;cursor:pointer;padding:0}
+.custom-item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:7px}
+.custom-item .cn{font-weight:700;font-size:.85rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.custom-item .cm{font-size:.66rem;color:var(--muted);margin-top:2px}
+.custom-item .acts{display:flex;gap:6px;flex-shrink:0}
+input[type=text]:focus{border-color:var(--crema)}
+.log-item b{color:var(--text);font-weight:600}
+details summary{cursor:pointer;font-size:.8rem;color:var(--muted);list-style:none;padding:4px 0}
+.kb-h{font-size:.72rem;color:var(--crema);font-weight:700;letter-spacing:.06em;margin:14px 0 6px}
+ul.kb{margin:0;padding-left:16px}
+ul.kb li{font-size:.76rem;color:var(--muted);line-height:1.7;margin-bottom:7px}
+ul.kb li b{color:var(--text);font-weight:600}
+details summary::before{content:"▸ "}details[open] summary::before{content:"▾ "}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--crema);color:var(--crema);padding:10px 18px;border-radius:99px;font-size:.8rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ==================== 設定頁 ==================== -->
+<div id="setupPage" class="wrap">
+  <header>
+    <svg class="logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="DRIP MATRIX">
+      <!-- 科技感外環 -->
+      <circle class="ring" cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+      <!-- 濾杯幾何主體 (V60) -->
+      <polygon points="15,30 85,30 50,90" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <line class="rib" x1="25" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line class="rib" x1="75" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <!-- 萃取水滴 -->
+      <path d="M50,15 Q62,35 50,55 Q38,35 50,15" fill="currentColor"/>
+      <!-- 數據節點 -->
+      <circle cx="15" cy="30" r="4" fill="var(--crema)"/>
+      <circle cx="85" cy="30" r="4" fill="var(--crema)"/>
+      <circle cx="50" cy="90" r="4" fill="var(--water)"/>
+    </svg>
+    <div class="brand">
+      <h1>DRIP MATRIX</h1>
+      <p>INTELLIGENT POUR-OVER ENGINE</p>
+    </div>
+  </header>
+
+  <!-- 1. 咖啡豆 -->
+  <div class="card">
+    <h2><span class="no">01</span>咖啡豆與物理變數</h2>
+    <div class="row2">
+      <div>
+        <label>粉量 (g) <b>· 觸發熱力補償</b></label>
+        <input type="number" id="dose" value="20" min="8" max="40" inputmode="decimal">
+      </div>
+      <div>
+        <label>烘焙度（基礎溶解率）</label>
+        <select id="roast"></select>
+      </div>
+    </div>
+    <div class="chips" id="doseChips"></div>
+
+    <label>處理法（細胞壁完整度 → 溶解率修正）</label>
+    <select id="process"></select>
+    <div class="hint" id="processHint"></div>
+
+    <label>產區風味（預期風味 → 水溫微調）</label>
+    <select id="origin"></select>
+    <div class="hint" id="originHint"></div>
+  </div>
+
+  <!-- 2. 濾杯 -->
+  <div class="card">
+    <h2><span class="no">02</span>濾杯幾何學</h2>
+    <label>濾杯型式（決定流速路徑與容錯率）</label>
+    <select id="dripper"></select>
+    <div class="hint" id="dripperHint"></div>
+  </div>
+
+  <!-- 3. 大師手法 -->
+  <div class="card">
+    <h2><span class="no">03</span>大師萃取模型</h2>
+    <label>手法選擇</label>
+    <select id="master"></select>
+    <div class="hint" id="masterHint"></div>
+    <div class="reco" id="masterReco"></div>
+
+    <div id="latteBox" style="display:none">
+      <div class="row2" style="margin-top:12px">
+        <div>
+          <label>基底濃度模式</label>
+          <select id="latteStrength">
+            <option value="9">清爽 1:9（茶感拿鐵）</option>
+            <option value="7" selected>標準 1:7（風味平衡）</option>
+            <option value="5.5">暴力濃縮 1:5.5（濃縮感）</option>
+          </select>
+        </div>
+        <div>
+          <label>咖啡液 : 牛奶</label>
+          <select id="milkRatio">
+            <option value="1.2">1 : 1.2（重咖啡感）</option>
+            <option value="1.5" selected>1 : 1.5（標準拿鐵）</option>
+            <option value="2">1 : 2（重奶感 / 大杯）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="icedBox" style="display:none">
+      <label style="margin-top:12px">冰塊佔總水量比例（決定稀釋後濃度）</label>
+      <select id="icePct">
+        <option value="0.35">35%　濃郁 · 適合中深焙 / 想加牛奶</option>
+        <option value="0.40" selected>40%　標準 · 日式冰咖啡黃金值</option>
+        <option value="0.45">45%　清爽 · 適合極淺焙茶感豆</option>
+      </select>
+      <div class="hint">冰塊會替代等量的熱水，總萃取濃度不變、只是把稀釋提前完成。冰塊請用大塊、實心的，碎冰融太快會沖淡前段。</div>
+    </div>
+
+    <label style="margin-top:16px">風味校正器（酸香 ↔ 甜感）</label>
+    <input type="range" id="tweak" min="-2" max="2" step="1" value="0">
+    <div class="tweak-labels"><span class="lo">← 更亮 / 果酸</span><span id="tweakMid">平衡</span><span class="hi">更甜 / 醇厚 →</span></div>
+  </div>
+
+  <!-- 3b. 自訂手法 -->
+  <div class="card">
+    <h2><span class="no">✎</span>我的手法（自訂儲存）</h2>
+    <div id="customList"></div>
+    <div class="btn-row">
+      <button class="btn-sm" id="newCustom">＋ 新建手法</button>
+      <button class="btn-sm" id="cloneCustom">複製目前手法為範本</button>
+    </div>
+
+    <div id="customEditor" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <label>手法名稱 <b>· 必填</b></label>
+      <input type="text" id="cName" maxlength="20" placeholder="例：我的古吉專用四段">
+      <div class="row2">
+        <div><label>粉水比 1:（留空＝依引擎運算）</label><input type="number" id="cRatio" step="0.5" min="5" max="20" placeholder="自動"></div>
+        <div><label>水溫 °C（留空＝依引擎運算）</label><input type="number" id="cTemp" min="70" max="100" placeholder="自動"></div>
+      </div>
+      <label>研磨度說明（選填）</label>
+      <input type="text" id="cGrind" maxlength="30" placeholder="例：中細偏粗，比平常粗半格">
+
+      <label style="margin-top:14px">沖煮段落 <b>· 累積水量須遞增，最後一段須為 100%</b></label>
+      <div class="step-head"><span>動作描述</span><span>秒數</span><span>累積%</span><span>注水</span><span></span></div>
+      <div id="stepRows"></div>
+      <button class="btn-mini" id="addStep" style="margin-top:8px">＋ 新增段落</button>
+
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn-sm" id="saveCustom">儲存手法</button>
+        <button class="btn-mini" id="cancelCustom">取消</button>
+      </div>
+      <div class="hint" style="margin-top:8px">流速會由「水量增量 ÷ 秒數」自動換算，不需手動填寫。未勾選「注水」的段落＝等待滴乾／浸泡／攪拌等不注水動作。</div>
+    </div>
+  </div>
+
+  <!-- 4. AI 運算藍圖 -->
+  <div class="card blueprint">
+    <h2><span class="no">AI</span>運算萃取藍圖</h2>
+    <div class="stats">
+      <div class="stat"><div class="k">目標水溫</div><div class="v temp" id="outTemp">--</div></div>
+      <div class="stat"><div class="k"><span id="waterLabel">總水量 </span><span id="outRatio"></span></div><div class="v water" id="outWater">--</div></div>
+      <div class="stat"><div class="k">研磨度</div><div class="v grind" id="outGrind">--</div></div>
+    </div>
+    <div class="calc-log" id="calcLog"></div>
+    <div id="warnBox"></div>
+    <div class="reco" id="bypassBox" style="display:none"></div>
+    <div class="reco" id="icedBox2" style="display:none"></div>
+    <div class="reco" id="milkBox" style="display:none"></div>
+  </div>
+
+  <!-- 5. 兌水降溫（可折疊） -->
+  <div class="card">
+    <details>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">兌水精準降溫（免溫控壺）</summary>
+      <div class="hint" style="margin-top:8px">水剛煮沸只有 100°C？不用等降溫。用熱平衡混合公式，直接兌室溫水一秒到達目標水溫。</div>
+      <div class="row2" style="margin-top:10px">
+        <div><label>室溫水溫 (°C)</label><input type="number" id="roomT" value="25" min="0" max="40"></div>
+        <div><label>壺內備水量 (g)</label><input type="number" id="kettleW" value="400" min="100" max="1500"></div>
+      </div>
+      <div class="mix-out">
+        <div class="f" id="mixFormula">--</div>
+        <div class="s" id="mixNote"></div>
+      </div>
+    </details>
+  </div>
+
+  <!-- 6. 沖煮日誌 -->
+  <div class="card">
+    <details>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">注水基本功（繞圈 · 流速 · 風味排除）</summary>
+
+      <div class="kb-h">繞圈路徑</div>
+      <ul class="kb">
+        <li><b>由內向外螺旋</b>：從中心點起繞，均勻向外，再等速收回中心。濾杯中央粉層最厚，由內向外能讓中心先浸潤並形成均勻對流。</li>
+        <li><b>邊界 1 公分禁區</b>：最外圈距濾紙壁約 1 公分就折返。水柱一旦碰到濾紙，水會沿壁流走而繞過粉層（通道效應），萃取不足、風味稀薄。</li>
+        <li><b>壺嘴高度 3～5 公分、保持垂直</b>：落差過大會強烈沖刷粉層，把微粉打進濾紙底部堵住排氣縫隙。</li>
+      </ul>
+
+      <div class="kb-h">流速的兩個數字（很多配方寫混了）</div>
+      <ul class="kb">
+        <li><b>爆發流速</b>：分段注水時「出水當下」的速度。秤上那幾秒會衝到 6～9 g/s，注完就停手等待。本 App 的 4:6 法、三刀流、Hoffmann 屬於此類。</li>
+        <li><b>連續流速</b>：不斷水手法全程都在出水，平均值必然較低，約 3～4 g/s。一刀流、點滴法屬於此類。<b>秤上看到 3 g/s 不代表你太慢</b>，而是這類手法本來就該這樣。</li>
+        <li>導航頁顯示的流速已依所選手法自動切換模型，跟著節拍器的數字追即可。</li>
+      </ul>
+
+      <div class="kb-h">風味排除表</div>
+      <ul class="kb">
+        <li><b>偏苦澀</b>（過萃）→ 流速調慢 1～2 g/s、減少繞圈圈數、縮小繞圈範圍，或研磨調粗。</li>
+        <li><b>偏酸、口感單薄</b>（萃取不足）→ 提高流速增強攪動、增加繞圈密度，或研磨調細、水溫調高。</li>
+        <li><b>尾段出現澀感</b> → 提早移開濾杯，不要等最後那段細滴漏完。</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2><span class="no">📓</span>沖煮日誌（本機儲存）</h2>
+    <div class="reco" id="lastBox" style="margin-top:0;margin-bottom:10px"></div>
+    <details><summary id="logCount">尚無紀錄</summary><div id="logList"></div></details>
+  </div>
+
+  <div class="dock"><button class="btn-main" id="goBrew">☕ 進入大師導航模式</button></div>
+</div>
+
+<!-- ==================== 沖煮頁 ==================== -->
+<div id="brewPage" class="wrap">
+  <div class="topbar">
+    <button class="link" id="backBtn">← 重新設定</button>
+    <div class="toggles">
+      <button class="tgl on" id="tglVoice">🔊 語音</button>
+      <button class="tgl on" id="tglBuzz">📳 震動</button>
+      <button class="tgl" id="tglWake">🔆 恆亮</button>
+    </div>
+  </div>
+
+  <div class="card" style="padding-top:12px">
+    <div id="voiceBox" style="display:none;margin-bottom:12px">
+      <label style="margin-top:0">語音嗓音</label>
+      <div style="display:flex;gap:8px">
+        <select id="voiceSel" style="flex:1"></select>
+        <button class="btn-mini" id="voiceTest" style="flex-shrink:0">試聽</button>
+      </div>
+      <div class="hint" id="voiceHint"></div>
+    </div>
+    <div class="timer" id="timer">00:00</div>
+
+    <!-- 招牌黑科技：即時注水節拍器 -->
+    <div class="pacer">
+      <svg width="250" height="250">
+        <circle class="ring-bg" cx="125" cy="125" r="112" stroke-width="10"/>
+        <circle class="ring-fg" id="ring" cx="125" cy="125" r="112" stroke-width="10"/>
+      </svg>
+      <div class="center">
+        <div class="cap">秤上現在應到</div>
+        <div class="live" id="liveG">0<small> g</small></div>
+        <div class="goal" id="stepGoal">本段目標 -- g</div>
+      </div>
+    </div>
+
+    <div class="action-box">
+      <div class="tag">動作指示</div>
+      <div class="act" id="actText">按下開始，跟著指針倒水</div>
+    </div>
+    <div class="flowline"><span style="font-size:.78rem;color:var(--muted)">建議流速</span><span class="fv" id="flowText">--</span></div>
+    <div class="tip" id="tipBox" style="display:none"><span id="tipText"></span></div>
+
+    <div class="ctrl">
+      <button class="btn-round" id="resetBtn">歸零</button>
+      <button class="btn-play" id="playBtn">開始</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:4px"><span class="no">MAP</span>全局萃取藍圖</h2>
+    <div class="strip" id="strip"></div>
+  </div>
+
+  <div class="finish" id="finishBox">
+    <div style="font-weight:800;color:var(--ok)">✅ 沖煮完成，移開濾杯，搖晃咖啡液後品嚐</div>
+    <div class="stars" id="stars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+    <input type="text" id="brewName" maxlength="24" placeholder="為這杯命名（選填，如：古吉日曬 冰咖啡）" style="text-align:center;font-size:.88rem;margin-bottom:10px">
+    <button class="btn-sm" id="saveLog">儲存本次沖煮紀錄</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ============================================================
+   資料庫（合併 V3.0 + Pro 全部知識，並補全 Origami）
+   ============================================================ */
+const ROASTS = {
+  'ultra-light':{name:'極淺焙',baseTemp:94,grind:'偏細（細砂糖）',baseRatio:16},
+  'light':      {name:'淺焙',  baseTemp:92,grind:'中細（二號砂糖）',baseRatio:15},
+  'medium':     {name:'中焙',  baseTemp:89,grind:'中等（海鹽）',baseRatio:14.5},
+  'med-dark':   {name:'中深焙',baseTemp:87,grind:'中粗（粗鹽偏細）',baseRatio:14},
+  'dark':       {name:'深 / 極深焙',baseTemp:84,grind:'中粗（粗鹽）',baseRatio:13},
+};
+const PROCESSES = {
+  'washed':   {name:'水洗 / 高海拔（Level 1 極難萃取）',tempMod:+1,note:'細胞壁堅硬完整，需高溫＋較強水柱攪拌。',flow:'加大水柱攪拌'},
+  'natural':  {name:'日曬 / 蜜處理（Level 2 正常萃取）',tempMod:0, note:'維持基礎水溫、標準繞圈即可。',flow:'標準繞圈'},
+  'anaerobic':{name:'厭氧 / 特殊發酵（Level 3 易萃取）',tempMod:-2,note:'細胞壁已被細菌分解，降溫並減少攪拌，以乾淨度優先。',flow:'水柱放輕柔'},
+  'decaf':    {name:'低咖啡因 Decaf（Level 4 極易萃取）',tempMod:-3,note:'結構極鬆散，極易過萃，建議同時調粗研磨。',flow:'中心溫和注水'},
+};
+const ORIGINS = {
+  'africa': {name:'非洲（衣索比亞 / 肯亞）',tempMod:+1,note:'花香、柑橘、莓果酸調強烈。想凸顯花香用 V60；怕太酸改蛋糕濾杯＋降溫。'},
+  'central':{name:'中南美（哥倫比亞 / 瓜地馬拉）',tempMod:0,note:'核果、焦糖、巧克力，平衡度高，標準參數即可。'},
+  'asia':   {name:'亞洲（曼特寧 / 印尼）',tempMod:-1,note:'草本、木質、厚實低酸，稍降溫防悶苦。'},
+  'exotic': {name:'酒桶 / 實驗處理',tempMod:-2,note:'風味極端濃烈，降溫＋拉大粉水比，減少翻攪。'},
+};
+const DRIPPERS = {
+  'v60':  {name:'圓錐濾杯（V60）',ratioMod:0,  grindNote:'',note:'流速快、香氣奔放、層次分明，但容錯率低，靠手法控制。適合淺焙。'},
+  'flat': {name:'平底 / 蛋糕濾杯（Kalita）',ratioMod:-0.5,grindNote:'',note:'水流均勻通過所有粉，甜感與 Body 極佳，容錯率極高。適合中深焙或想把淺焙沖甜。'},
+  'origami':{name:'溝槽混合型（Origami / 星芒）',ratioMod:0,grindNote:'（流速極快，建議再細 1 格）',note:'流速極快，依濾紙貼合度變化。搭配蛋糕紙＝偏甜；搭配錐形紙＝偏亮。'},
+};
+const MASTERS = {
+  /* ===== 日常實戰 ===== */
+  'onepour':  {group:'日常實戰',name:'一刀流（連續注水 One Pour）',note:'悶蒸後不斷水，一氣呵成繞圈注到底。水位始終不落，粉層溫度最穩定。乾淨度極高、風味通透，是新鮮淺焙豆最不會出錯的日常手法。',grind:null},
+  'threepour':{group:'日常實戰',name:'三刀流（悶蒸＋兩段注水）',note:'台灣最普及的日常手法。悶蒸後分兩刀注水，中間斷水滴乾。第二刀決定風味主體、第三刀決定濃度，好記好複製、容錯率高。',grind:null},
+  'rao':      {group:'日常實戰',name:'Rao 攪拌法（Scott Rao Spin）',note:'悶蒸時用湯匙攪散乾粉團，主注水一次到底，結束前旋轉濾杯讓粉牆塌平。攪拌與旋轉大幅提升萃取均勻度，甜感與 Body 明顯上升。',grind:'比平常細半格',tempMod:1,tempLog:'高攪拌需高溫配合'},
+
+  /* ===== 冠軍手法 ===== */
+  'tetsu46': {group:'冠軍手法',name:'4:6 法（Tetsu Kasuya · 世界冠軍）',note:'粗研磨、分 5 段、每段完全滴乾。前 40% 調酸甜、後 60% 調濃度。適合淺中焙，追求層次與乾淨度。',grind:'粗研磨（如法式濾壓）'},
+  'hoffmann':{group:'冠軍手法',name:'終極 V60（James Hoffmann · 世界冠軍）',note:'中細研磨、極高溫、悶蒸搖晃 Swirl，60% 大水柱快注。適合極淺焙難萃豆，追求風味強度與均勻。',grind:'偏細研磨'},
+  'lance':   {group:'冠軍手法',name:'極長悶蒸（Lance Hedrick）',note:'悶蒸長達 2 分鐘讓粉吸飽水，之後 1-2 次大水流注完。極端甜感、手法最省事。',grind:null},
+
+  /* ===== 日系傳統 ===== */
+  'osmotic': {group:'日系傳統',name:'滲透點滴流（Kono 式）',note:'中深焙專屬，粉水比刻意拉濃到 1:10 到 1:12。前段完全不繞圈，水滴只落在正中心 1 公分處，靠毛細現象自然向外擴散；待中心膨脹成火山狀才轉小範圍繞圈。追求極濃郁滑順、零苦澀的高醇厚度。',grind:null,ratioMod:-3},
+  'matsuya': {group:'日系傳統',name:'松屋式（Matsuya · 高濃縮兌水）',note:'昭和名店手法。粗研磨、超長悶蒸 3 分鐘，再以點滴萃取出高濃縮液，最後直接兌熱水稀釋到目標量。只取最精華的前段，甜感濃郁卻毫無雜味。',grind:'粗研磨（如法式濾壓）',bypass:0.47},
+
+  /* ===== 浸泡式 ===== */
+  'clever':  {group:'浸泡式',name:'聰明濾杯浸泡法（Clever / Hario Switch）',note:'閥門關閉先浸泡、時間到再開閥濾出。萃取率由「浸泡時間」決定而非手法，是所有沖煮法中容錯率最高的一種 — 幾乎不可能失敗，甜感與 Body 極飽滿。',grind:'中粗（粗鹽）',tempMod:-1,tempLog:'浸泡式萃取效率高，降溫防過萃'},
+
+  /* ===== 特殊飲品 ===== */
+  'dripbag': {group:'特殊飲品',name:'濾掛掛耳專用（Drip Bag）',note:'粉層極薄、掛耳無粉牆，先天萃取不足且極易走水。對策：水溫拉高、水柱放到最細、分三段拉長接觸時間，絕不擠壓濾袋。',grind:'濾掛已預磨（中細），無法調整 — 改用水溫與注水節奏控制',tempMod:1,tempLog:'濾掛薄粉層散熱極快'},
+  'latte':   {group:'特殊飲品',name:'手沖拿鐵基底（Latte Base）',note:'不做正常濃度，改沖高濃度咖啡基底再兌牛奶。細研磨、少水量、慢注水，追求足以撐過牛奶稀釋的厚實風味。',grind:'細研磨（細砂糖）',ratio:7,minTemp:92,tempLog:'拿鐵基底需高溫確保濃度'},
+  'iced':    {group:'特殊飲品',name:'手沖冰咖啡（Flash Brew 急速冷萃）',note:'下壺先放冰塊，用熱水沖出高濃度咖啡液直接砸進冰上瞬間冷卻。香氣分子來不及揮發就被鎖住，這是冰滴與冷萃都做不到的花果香強度。冰塊是總水量的一部分，不是額外加的。',grind:'比熱沖細半格',ratioMod:-1,minTemp:92,tempLog:'急速冷卻需高溫確保萃取率'},
+};
+
+/* ============================================================
+   手法註冊表：內建 MASTERS + 使用者自訂，合併為 MX
+   ============================================================ */
+const CUSTOM_KEY='dripmatrix_custom_v1';
+const MX={};
+function loadCustoms(){try{return JSON.parse(localStorage.getItem(CUSTOM_KEY))||[];}catch(e){return[];}}
+function writeCustoms(arr){
+  try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(arr.slice(0,20)));return true;}
+  catch(e){toast('儲存失敗：瀏覽器儲存空間受限');return false;}
+}
+function refreshMasters(){
+  Object.keys(MX).forEach(k=>delete MX[k]);
+  Object.assign(MX,MASTERS);
+  loadCustoms().forEach(c=>{
+    MX['c:'+c.id]={group:'我的手法',name:c.name,
+      note:c.note||'自訂手法：段落與水量分配依你設定的時間軸執行。',
+      grind:c.grind||null, ratioFixed:c.ratio||null, tempFixed:c.temp||null, custom:c};
+  });
+}
+
+/* ============================================================
+   工具
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const clamp = (v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+function fillSelect(sel,db){
+  const ent=Object.entries(db);
+  if(!ent.some(([,v])=>v.group)){
+    sel.innerHTML=ent.map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');return;
+  }
+  const groups={};
+  ent.forEach(([k,v])=>{(groups[v.group]=groups[v.group]||[]).push([k,v]);});
+  sel.innerHTML=Object.entries(groups).map(([g,items])=>
+    `<optgroup label="${g}">`+items.map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('')+'</optgroup>'
+  ).join('');
+}
+
+/* ============================================================
+   核心運算引擎
+   ============================================================ */
+const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0 };
+let P = null; // 最新運算結果
+
+function calc(){
+  const base=ROASTS[S.roast], proc=PROCESSES[S.process], orig=ORIGINS[S.origin], drp=DRIPPERS[S.dripper];
+  const logs=[`基礎 ${base.baseTemp}°C（${base.name}）`];
+
+  // 1) 粉量熱力學補償：微粉量散熱快 → 加溫；大粉量積熱 → 降溫
+  //    例外：高萃取需求模式（拿鐵基底 / Hoffmann）需要火力全開，停用厚粉層降溫
+  const highExt = ['latte','hoffmann','iced','rao'].includes(S.master);
+  let doseMod=0, doseNote='';
+  if(S.dose<=14){doseMod=+1;doseNote='粉層薄散熱快';}
+  else if(S.dose>=28){doseMod=highExt?0:-2;doseNote='粉層極厚積熱';}
+  else if(S.dose>=23){doseMod=highExt?0:-1;doseNote='粉層厚保溫';}
+  if(doseMod!==0)logs.push(`熱力補償 ${doseMod>0?'+':''}${doseMod}°C（${doseNote}）`);
+  else if(highExt&&S.dose>=23)logs.push('高濃度模式：停用厚粉層降溫');
+
+  // 2) 溶解率矩陣（處理法）＋ 產區
+  if(proc.tempMod!==0)logs.push(`溶解率修正 ${proc.tempMod>0?'+':''}${proc.tempMod}°C`);
+  if(orig.tempMod!==0)logs.push(`產區修正 ${orig.tempMod>0?'+':''}${orig.tempMod}°C`);
+
+  // 3) 風味校正：僅在推到極端(±2)時才動水溫，避免與粉水比重複計價
+  const tweakTemp=Math.trunc(S.tweak/2);
+  if(tweakTemp!==0)logs.push(`風味微調 ${tweakTemp>0?'+':''}${tweakTemp}°C`);
+
+  let temp = base.baseTemp + doseMod + proc.tempMod + orig.tempMod + tweakTemp;
+
+  // 4) 大師手法強制覆寫
+  const mst=MX[S.master]||MASTERS.threepour;
+  if(S.master==='hoffmann'){temp=Math.max(temp+3,95);logs.push('Hoffmann 強制高溫');}
+  if(S.master==='osmotic'){temp=Math.min(temp-3,86);logs.push('日系點滴強制低溫');}
+  if(mst.tempMod){temp+=mst.tempMod;logs.push(`手法補償 ${mst.tempMod>0?'+':''}${mst.tempMod}°C（${mst.tempLog}）`);}
+  if(mst.minTemp&&temp<mst.minTemp){temp=mst.minTemp;logs.push(mst.tempLog);}
+  if(mst.tempFixed){temp=mst.tempFixed;logs.push(`自訂手法固定水溫 ${temp}°C`);}
+  temp=clamp(Math.round(temp),75,100);
+
+  // 5) 粉水比：濾杯幾何 + 風味（要甜→比例縮短一點會更醇；此處沿用原引擎：tweak 正=甜=略縮）
+  let ratio;
+  if(mst.ratioFixed){ratio=clamp(mst.ratioFixed,5,20);logs.push(`自訂手法固定粉水比 1:${ratio}`);}
+  else if(mst.ratio){
+    ratio=+($('latteStrength')?$('latteStrength').value:mst.ratio);
+    logs.push(`高濃度基底鎖定 1:${ratio}`);
+  }
+  else{
+    ratio=clamp(+(base.baseRatio + drp.ratioMod + (mst.ratioMod||0) + S.tweak*-0.5).toFixed(1),9,18);
+    if(mst.ratioMod)logs.push('冰飲補強濃度 '+mst.ratioMod);
+  }
+  let total=Math.round(S.dose*ratio);
+
+  // 5a-0) 松屋式 bypass：一部分熱水不過粉層，萃取結束後直接兌進下壺
+  let bypass=null;
+  if(mst.bypass){
+    const bp=Math.round(total*mst.bypass), brew=total-bp;
+    bypass={bp,brew,all:total,pct:Math.round(mst.bypass*100)};
+    logs.push(`兌水分流 ${bypass.pct}%（${bp}g 不過粉層）`);
+    total=brew;
+  }
+
+  // 5a) 冰咖啡：冰塊是「總水量的一部分」，秤上要注入的只有熱水
+  let iced=null;
+  if(S.master==='iced'){
+    const pct=+($('icePct')?$('icePct').value:0.4);
+    const ice=Math.round(total*pct);
+    const hot=total-ice;
+    iced={ice,hot,brewWater:total,pct:Math.round(pct*100)};
+    logs.push(`冰塊置換 ${iced.pct}%（${ice}g）`);
+    total=hot; // 之後所有步驟目標與節拍器，一律以「實際注入的熱水」為準
+  }
+
+  // 5b) 拿鐵牛奶量：咖啡液 = 總水量 − 粉持液量(約 2×粉量)，這是多數配方最常算錯的一步
+  let milk=null;
+  if(S.master==='latte'){
+    const mr=+($('milkRatio')?$('milkRatio').value:1.5);
+    const liquid=Math.max(0,total - S.dose*2);
+    milk={liquid,mr,hot:Math.round(liquid*mr),ice:Math.round(liquid*mr*0.55),cold:Math.round(liquid*mr*0.75)};
+  }
+
+  // 5c) 防呆警示
+  const warns=[];
+  if(S.master==='osmotic'&&(S.roast==='ultra-light'||S.roast==='light'))
+    warns.push('日系點滴法是為中深焙設計的：低溫＋極慢流速用在淺焙上，幾乎必然萃取不足而尖酸。建議改用 4:6 法或 Hoffmann。');
+  if(S.master==='latte'&&S.dose>=30)
+    warns.push(`粉量 ${S.dose}g 屬超厚粉層，此時「再調細」會讓粉層堵塞、流速停滯而萃出乾澀。請維持中細，改用縮短粉水比來提升濃度。`);
+  if(S.dose>=28&&!highExt)
+    warns.push('粉層極厚，建議研磨調粗半格，否則水下不去反而過萃。');
+  if(ratio<=6)
+    warns.push('暴力濃縮模式流速極慢：秤到目標水量就立刻移開濾杯，尾段的乾澀不要留。');
+  if(iced&&iced.hot < S.dose*3.5)
+    warns.push(`熱水僅 ${iced.hot}g，扣掉咖啡粉持液 ${S.dose*2}g 後幾乎流不進下壺。請降低冰塊比例或拉長粉水比。`);
+
+  // 6) 研磨度
+  let grind = mst.grind || base.grind;
+  if(!mst.grind) grind += drp.grindNote||'';
+  if(S.master==='latte'&&S.dose>=30) grind='中細研磨（粉層過厚，請勿再細）';
+  if(S.master!=='dripbag'){
+    if(S.tweak>0)grind+='（微調細 1 格增甜）';
+    if(S.tweak<0)grind+='（微調粗 1 格增亮）';
+  }
+
+  // 7) 產生步驟（含等待滴乾，時間軸自動生成）
+  const steps=buildSteps(total,milk,bypass);
+
+  P={temp,ratio,total,grind,steps,logs,milk,iced,bypass,warns,flowNote:proc.flow};
+  renderBlueprint();
+  saveSettings();
+}
+
+/* 依大師手法動態產生時間軸步驟
+   ── 流速的兩種模型（多數配方把這兩個數字寫混了）────────────────
+   爆發流速 (burst)：分段注水時「壺嘴出水當下」的速度。段落長度 = 注水秒數 + 等待秒數，
+                    所以秤在注水那幾秒會顯示 6~9 g/s，注完歸零等待。
+   連續流速 (cont) ：不斷水手法（一刀流、Rao 主注水）全程都在出水，
+                    平均值必然較低（約 3~4 g/s），這才是秤上會持續顯示的數字。
+   ────────────────────────────────────────────── */
+const POUR_RATE={ B:3.5, S:6.5, F:9 };   // 悶蒸 / 標準 / 快速大水流
+function buildSteps(total,milk,bypass){
+  const d=S.dose, tw=S.tweak, st=[];
+  /* mode: 'B'悶蒸 'S'標準 'F'快速 → 爆發模型；'C'連續 'D'點滴 → 整段出水 */
+  const push=(dur,target,action,tip,pour,mode)=>{
+    const start=st.length?st[st.length-1].end:0;
+    const prev=st.length?st[st.length-1].target:0;
+    target=Math.round(target);
+    const delta=target-prev;
+    let flow='—', pourSec=0;
+    if(pour&&delta>0){
+      const cont = !POUR_RATE[mode];
+      pourSec = cont ? dur : Math.min(dur, Math.max(3, Math.round(delta/POUR_RATE[mode])));
+      const r=delta/pourSec;
+      flow = r<1.5 ? `約 ${r.toFixed(1)} g/s`
+                   : `${Math.max(1,Math.round(r-0.5))}-${Math.round(r+0.5)} g/s`;
+    }
+    st.push({start,end:start+dur,target,action,tip,flow,pour:!!pour,pourSec});
+  };
+  const durB=(delta,mode,wait)=>Math.max(6,Math.round(delta/POUR_RATE[mode]))+(wait||0);
+  const durC=(delta,rate,min)=>Math.max(min||20,Math.round(delta/rate));
+
+  const cus=(MX[S.master]||{}).custom;
+  if(cus){
+    cus.steps.forEach((s,i)=>{
+      push(Math.max(1,s.dur),total*s.pct/100,s.action||`第 ${i+1} 段`,s.tip||'',!!s.pour,'C');
+    });
+    return st;
+  }
+
+  if(S.master==='tetsu46'){
+    const w40=total*0.4, w60=total*0.6;
+    let p1=w40*0.5,p2=w40*0.5;
+    if(tw<0){p1=w40*0.6;p2=w40*0.4;} if(tw>0){p1=w40*0.4;p2=w40*0.6;}
+    const p3=w60/3;
+    push(40,p1,'【第一注·悶蒸】中心向外螺旋','由中心起繞，外圈距濾紙壁約 1 公分折返。氣泡停止大量冒出、稍失光澤＝排氣完成。',true,'B');
+    push(5, p1,'等待完全滴完','',false);
+    push(durB(p2,'S',12),p1+p2,'【第二注·調味段】50 元硬幣繞圈',tw>0?'系統已加大此段水量以提升甜感。':tw<0?'系統已調整水量凸顯酸香。':'注水那十幾秒秤上會衝到 6-8 g/s，注完就停手等滴完，這是正常的。',true,'S');
+    push(20,p1+p2,'等待完全滴完','',false);
+    push(durB(p3,'S',10),p1+p2+p3,'【第三注·調濃度】中大水流','提取 Body，水柱勿沖到邊緣濾紙，否則會產生通道效應。',true,'S');
+    push(20,p1+p2+p3,'等待完全滴完','',false);
+    push(durB(p3,'S',8),p1+p2+p3*2,'【第四注】穩定繞圈','維持水溫，節奏比前一注略快。',true,'S');
+    push(20,p1+p2+p3*2,'等待完全滴完','',false);
+    push(durB(p3,'S',5),total,'【最後一注】中心定點','中心注水避免翻攪邊緣雜質，保持尾段潔淨。',true,'S');
+    push(35,total,'等待濾完，準備品嚐','若水流變極細滴漏，可提早移出濾杯避免苦澀。',false);
+  }else if(S.master==='hoffmann'){
+    push(45,d*3,'悶蒸 + 拿起濾杯搖晃','確保所有細粉濕潤，搖到表面平整。',true,'B');
+    push(durB(total*0.6-d*3,'F',16),total*0.6,'主注水（快速大水柱至 60%）','刻意加快，用水流動能打翻底部粉層追求均勻。注水約十幾秒就到量，之後維持水位等待。',true,'F');
+    push(durC(total*0.4,3.5,30),total,'緩慢補水至滿','降速小範圍繞圈，維持液面不落。',true,'C');
+    push(15,total,'湯匙輕攪一圈 + 搖晃濾杯','讓粉牆塌回、表面平整。',false);
+    push(45,total,'等待濾完','目標總時 3:30 內滴完，過久＝研磨太細。',false);
+  }else if(S.master==='osmotic'){
+    push(45,d*1.5,'【點滴期】正中心 1 公分定點，完全不繞圈','水滴一顆顆落下即可，絕不繞圈、絕不流到邊緣。靠毛細現象讓水自然向外擴散，這是 Kono 式的靈魂。',true,'D');
+    push(75,total*0.35,'【持續點滴】等中心膨脹成火山狀','看到中心隆起成火山口就對了。維持極慢滴速，讓粉層自己把水吸開。',true,'D');
+    push(durC(total*0.35,3,25),total*0.7,'【轉繞圈】由內向外小範圍繞圈','火山成形後才可以繞圈，但範圍不可超過粉床面積的一半。',true,'D');
+    push(durC(total*0.3,4.5,15),total,'【後段拉高水流】細水流補足至目標量','此時可提高到 4 到 5 g/s，但仍維持細水柱，不沖破邊緣粉牆。',true,'D');
+    push(50,total,'等待濾完','尾段若出現澀感來源的細流，提早移杯。',false);
+  }else if(S.master==='onepour'){
+    push(40,d*2,'【悶蒸】中心向外螺旋','外圈距濾紙壁 1 公分折返。氣泡停止大量冒出、稍失光澤＝排氣完成。',true,'B');
+    push(durC(total-d*2,3.2,45),total,'【一刀流】連續繞圈注到底，全程不斷水','由內向外螺旋到距壁 1 公分，再等速收回中心，反覆循環。全程都在出水，所以秤上會穩定顯示 3 g/s 上下 — 比分段注水的瞬間值低是正常的。',true,'C');
+    push(50,total,'等待濾完','總時間約 2:30 到 3:00 滴完最理想。',false);
+  }else if(S.master==='threepour'){
+    push(35,d*2,'【悶蒸】中心向外螺旋','新鮮豆會隆起成漢堡狀，此時溫柔給水，不可沖破粉層。',true,'B');
+    push(15,d*2,'等待完全滴完','',false);
+    push(durB(total*0.6-d*2,'S',18),total*0.6,'【第一刀】由內向外螺旋 · 決定風味主體','繞到距濾紙壁 1 公分折返。注水那十幾秒秤上會到 6-8 g/s，帶動粉層均勻翻滾。',true,'S');
+    push(20,total*0.6,'等待水位下降約三分之一','',false);
+    push(durB(total*0.4,'S',15),total,'【第二刀】縮小範圍，中央小圈 · 決定濃度','刻意縮到中央二分之一區域，避免大水流沖刷邊緣細粉而帶出苦澀。',true,'S');
+    push(45,total,'等待濾完','若尾段變成極細滴漏，可提早移出濾杯避免苦澀。',false);
+  }else if(S.master==='rao'){
+    push(45,d*2.5,'【悶蒸】注水後拿起濾杯輕搖 3 到 4 圈','搖杯讓水與粉瞬間完整混合、打散結塊的粉團，表面要平整無未濕潤的粉。',true,'B');
+    push(durB(total-d*2.5,'S',20),total,'【主注水】一次到底，由內向外等速螺旋','不斷水、不分段。Rao 認為分段只會製造溫度波動。',true,'S');
+    push(15,total,'【收尾旋轉】水快濾完時，水平輕搖 1 到 2 圈','力道務必輕柔，只要讓微小離心力把黏在濾紙壁上的殘粉沖回中央、鋪平粉床即可。力道過大會讓微粉堵塞底孔。',false);
+    push(45,total,'等待濾完','粉層應呈現平坦的圓餅狀。若中間凹陷或邊緣殘留粉牆，代表旋轉不夠。',false);
+  }else if(S.master==='clever'){
+    push(30,d*2,'【悶蒸】確認閥門關閉，注水潤濕全部粉層','聰明濾杯或 Switch 請先確認底部閥門是關的，否則水會直接漏光。',true,'B');
+    push(durB(total-d*2,'F',10),total,'【注滿】注入剩餘全部熱水','浸泡式不需技巧，可用較大水流快速注滿，再用湯匙輕攪一圈確保無未濕潤的粉。',true,'F');
+    push(15,total,'用湯匙輕拍粉層，讓浮粉沉入水中','只要輕拍讓表面浮粉沉下去即可，不需大力攪拌 — 過度攪拌會把微粉打散，反而堵塞底部。',false);
+    push(120,total,'【浸泡】靜置 2 分鐘，蓋上蓋子保溫','加上前面注水的時間，總接觸時間約 3 分鐘。想更濃就多等 1 分鐘，想更清爽就提早開閥。這是全場最容錯的一步。',false);
+    push(45,total,'放到杯上開啟底閥，等待排空','下排約 45 秒。若超過 1 分半，下次研磨調粗。',false);
+  }else if(S.master==='matsuya'){
+    push(35,d*2,'【潤濕】中心挖深穴，高位大水流快速繞圈濕潤全粉','先在粉層中間挖一個深穴。注水量約粉重 2 倍，由中心高位大水流快速向外繞圈，把全部粉打濕。',true,'F');
+    push(180,d*2,'【蒸氣悶蒸】蓋上蓋子，靜置 3 分鐘','松屋式的靈魂。蓋上蓋子讓蒸氣悶住，粗研磨加長悶蒸能萃出潔淨的甜卻不帶澀。這 3 分鐘什麼都不用做。',false);
+    push(durB(total-d*2,'F',15),total,'【一鼓作氣】由內向外大水流注至目標濃縮量',`高位大水流快速注水，秤到 ${Math.round(total)} 克立刻停手。這裡刻意快，就是要在雜味出來前結束。`,true,'F');
+    push(10,total,'立即移開濾杯',bypass?'此時下壺只有濃縮液，接著要兌熱水。':'',false);
+    push(25,total,bypass?`兌入熱水 ${bypass.bp} 克，完成`:'完成',bypass?`直接把 ${bypass.bp} 克熱水倒進下壺稀釋到目標濃度。這叫分流兌水：因為只取了最精華的前段，稀釋後依然濃郁且完全避開中後段的苦澀與雜味。`:'',false);
+  }else if(S.master==='dripbag'){
+    push(30,d*2,'【悶蒸】細水柱由中心繞小圈','掛耳粉層極薄，水柱務必細且貼近粉面。沖穿見底就是通道效應，整杯就淡了。',true,'D');
+    push(15,d*2,'等待完全滴完','',false);
+    push(durC(total*0.55-d*2,3,30),total*0.55,'【第二注】小範圍繞圈','絕不沖到濾紙邊緣 — 掛耳側邊沒有粉牆，水會直接沿壁走掉。',true,'C');
+    push(15,total*0.55,'等待完全滴完','',false);
+    push(durC(total*0.45,3,30),total,'【第三注】中心定點溫和注入','分三段拉長接觸時間，正是為了補足濾掛粉層薄、萃取不足的先天弱點。',true,'C');
+    push(35,total,'滴完後直接取下濾掛','切勿擠壓或甩動濾袋，會把澀味擠進杯裡。',false);
+  }else if(S.master==='latte'){
+    push(35,d*2.5,'【悶蒸】高濃度基底 · 中心小圈','細研磨易堵塞，給水要輕柔，讓粉層自然膨脹。',true,'B');
+    push(durC(total*0.6-d*2.5,3.5,28),total*0.6,'【第二注】小範圍密集螺旋','全程集中在中央三分之二區域，絕不沖到邊緣。總水量本來就少，每一克都要準，寧慢勿快。',true,'C');
+    push(15,total*0.6,'等待完全滴完','',false);
+    push(durC(total*0.4,3.5,22),total,'【第三注】中心定點注完','基底完成，濃度應接近糖漿感。',true,'C');
+    push(30,total,'等待濾完，取下濾杯','細粉流速慢屬正常；若超過 4 分鐘仍未滴完，下次調粗半格。',false);
+    push(25,total,`兌入牛奶 ${milk?milk.hot:''} 克，完成`,milk?`熱拿鐵：牛奶加熱至 60 到 65 度，勿煮沸，否則會出蛋白質腥味。冰拿鐵：改用冰塊 ${milk.ice} 克加冰牛奶 ${milk.cold} 克。`:'',false);
+  }else if(S.master==='iced'){
+    push(30,d*2.2,'【悶蒸】細水柱由中心繞小圈','下壺請先放好冰塊、再把電子秤歸零。秤上顯示的是你注入的熱水，不含冰塊。',true,'B');
+    push(durC(total*0.6-d*2.2,4,12),total*0.6,'【第二注】小範圍密集螺旋','熱水總量比熱沖少，刻意放慢到 3 到 5 g/s 拉長接觸時間。全程集中在中央三分之二區域，絕不沖到邊緣。',true,'C');
+    push(10,total*0.6,'略等水位下降','',false);
+    push(durC(total*0.4,4,12),total,'【第三注】維持小範圍密集繞圈','讓每一滴熱水都高效帶出溶解物質，濃縮液瞬間落入冰塊冰鎮。',true,'C');
+    push(25,total,'滴完立即取下濾杯，搖晃下壺','讓熱咖啡液與剩餘冰塊快速混合完成降溫，慢了香氣就跑掉了。',false);
+    push(15,total,'倒入冰杯，完成','冰塊沒融完是正常的，代表濃度抓得剛好。若冰塊全化光還變淡，下次提高冰塊比例。',false);
+  }else{ // lance
+    push(120,d*3,'極長悶蒸，整整 2 分鐘','不要懷疑，就是等。讓粉吸飽水引出極致甜感。',true,'B');
+    push(durC(total-d*3,4,45),total,'大圈繞圈一次注完','一口氣溫和注完剩餘全部水量。',true,'C');
+    push(40,total,'等待濾完','',false);
+  }
+  return st;
+}
+
+/* ============================================================
+   設定頁渲染
+   ============================================================ */
+function renderBlueprint(){
+  $('outTemp').textContent=P.temp+'°C';
+  $('outWater').textContent=P.total+'g';
+  $('outRatio').textContent='1:'+P.ratio;
+  $('outGrind').textContent=P.grind;
+  $('calcLog').innerHTML='<b>運算軌跡：</b>'+P.logs.join(' → ')+' ⇒ '+P.temp+'°C。手勢：'+P.flowNote+'。';
+  $('processHint').textContent=PROCESSES[S.process].note;
+  $('originHint').textContent=ORIGINS[S.origin].note;
+  $('dripperHint').textContent=DRIPPERS[S.dripper].note;
+  $('masterHint').textContent=(MX[S.master]||MASTERS.threepour).note;
+  $('tweakMid').textContent=S.tweak===0?'⦿ 平衡':(S.tweak>0?'甜感 +'+S.tweak:'酸香 '+S.tweak);
+  $('latteBox').style.display=S.master==='latte'?'block':'none';
+  $('icedBox').style.display=S.master==='iced'?'block':'none';
+  $('waterLabel').textContent=P.iced?'熱水注入量 ':(P.bypass?'過粉層水量 ':'總水量 ');
+  $('warnBox').innerHTML=(P.warns||[]).map(w=>`<div class="warn"><b>⚠ 系統攔截：</b>${w}</div>`).join('');
+  const bb=$('bypassBox');
+  if(P.bypass){
+    bb.style.display='block';
+    bb.innerHTML=`💧 <b>兌水分流（Bypass）</b>：目標總量 ${P.bypass.all}g ＝ 過粉層萃取 <b>${P.bypass.brew}g</b> ＋ 事後兌入熱水 <b>${P.bypass.bp}g</b>（${P.bypass.pct}%）。<br>
+    秤上只需注到 ${P.bypass.brew}g 就停手，剩下的熱水最後直接倒進下壺。`;
+  }else bb.style.display='none';
+  const ib=$('icedBox2');
+  if(P.iced){
+    ib.style.display='block';
+    ib.innerHTML=`🧊 下壺先放<b> 冰塊 ${P.iced.ice}g </b>（${P.iced.pct}%），再把電子秤歸零。<br>
+    接著注入<b> 熱水 ${P.iced.hot}g </b>（${P.temp}°C）。<br>
+    萃取總水量 ${P.iced.brewWater}g＝冰 ${P.iced.ice}g ＋ 熱水 ${P.iced.hot}g，成品約 ${P.iced.brewWater - S.dose*2}g。`;
+  }else ib.style.display='none';
+  const mb=$('milkBox');
+  if(P.milk){
+    mb.style.display='block';
+    mb.innerHTML=`🥛 實際咖啡液約 <b>${P.milk.liquid}g</b>（總水 ${P.total}g 已扣除咖啡粉持液 ${S.dose*2}g）。<br>
+    熱拿鐵：牛奶 <b>${P.milk.hot}g</b>，加熱至 60–65°C。<br>
+    冰拿鐵：冰塊 <b>${P.milk.ice}g</b> ＋ 冰牛奶 <b>${P.milk.cold}g</b>（冰塊融化後總量相當）。`;
+  }else mb.style.display='none';
+  renderReco(); renderMix();
+}
+
+/* 智能手法推薦（依豆況） */
+function renderReco(){
+  const SPECIAL={
+    dripbag:'🤖 <b>濾掛專用模式</b>：研磨度已鎖定（預磨無法調整），系統改以水溫補償與三段注水節奏彌補萃取不足。',
+    latte:'🤖 <b>拿鐵基底模式</b>：粉水比已鎖定高濃度，下方會依真實咖啡液量自動算出熱／冰拿鐵的牛奶用量。',
+    iced:'🤖 <b>冰咖啡模式</b>：系統已把冰塊視為總水量的一部分並自動拆帳，秤上只需注入計算後的熱水量。',
+    matsuya:'🤖 <b>松屋式模式</b>：系統已自動拆出 bypass 兌水量，秤上只需注到「過粉層水量」，剩餘熱水最後直接兌入下壺。',
+    clever:'🤖 <b>浸泡式模式</b>：萃取率由浸泡時間決定，手法幾乎不影響結果。想更濃就延長浸泡，想更清爽就縮短。'};
+  if((MX[S.master]||{}).custom){
+    $('masterReco').innerHTML='🤖 <b>自訂手法模式</b>：時間軸完全依你儲存的段落執行，流速由水量增量自動換算。可在「我的手法」隨時編輯。';
+    return;
+  }
+  if(SPECIAL[S.master]){$('masterReco').innerHTML=SPECIAL[S.master];return;}
+  let key='threepour',why='悶蒸加兩刀，好記好複製，日常最穩的萬用解。';
+  if(S.roast==='ultra-light'&&S.process==='washed'){key='hoffmann';why='極淺焙＋水洗＝Level 1 極難萃取，需要高溫高攪拌。';}
+  else if(S.process==='anaerobic'||S.process==='decaf'){key='onepour';why='這類豆極易萃取，一刀流不斷水、不攪拌，乾淨度最高、最不容易翻出雜味。';}
+  else if(S.roast==='dark'){key='osmotic';why='深焙走日系點滴，鎖焦糖甜、杜絕焦苦。';}
+  else if(S.roast==='med-dark'){key='matsuya';why='中深焙用松屋式只取精華前段再兌水，甜感濃郁且毫無澀味。';}
+  else if(S.dose>=28){key='clever';why='大粉量厚粉層最怕流速失控，浸泡式把變數交給時間，容錯率最高。';}
+  else if(S.tweak>=2){key='rao';why='你要的是甜感與 Body，攪拌＋Rao Spin 提升萃取均勻度，是增甜最直接的路。';}
+  else if(S.roast==='light'&&S.tweak<=-1){key='tetsu46';why='淺焙追求層次與明亮酸，4:6 法的分段控制最精準。';}
+  const r=$('masterReco');
+  if(key===S.master){r.innerHTML='🤖 AI 判定：目前手法與豆況<b>完全匹配</b>。'+why;}
+  else{r.innerHTML=`🤖 AI 建議改用「<b>${MASTERS[key].name}</b>」：${why} <u style="cursor:pointer" onclick="applyReco('${key}')">一鍵套用</u>`;}
+}
+window.applyReco=k=>{S.master=k;$('master').value=k;calc();toast('已套用 AI 推薦手法');};
+
+/* 兌水降溫計算機：熱平衡混合公式 cold = W*(100-T)/(100-Troom) */
+function renderMix(){
+  const room=clamp(+$('roomT').value||25,0,40);
+  const W=clamp(+$('kettleW').value||400,100,1500);
+  const T=P.temp;
+  if(T>=99||room>=T){$('mixFormula').textContent='目標接近沸點，直接使用沸水';$('mixNote').textContent='';return;}
+  const cold=Math.round(W*(100-T)/(100-room));
+  const hot=W-cold;
+  $('mixFormula').textContent=`沸水 ${hot}g ＋ 室溫水 ${cold}g ＝ ${T}°C × ${W}g`;
+  $('mixNote').textContent=`熱平衡公式即時混合。備水 ${W}g > 沖煮需求 ${P.total}g，留有壺內殘留與潤濕濾紙餘裕。`;
+}
+
+/* ============================================================
+   沖煮頁：計時器（timestamp 基準防漂移）＋ 節拍器
+   ============================================================ */
+const RING_LEN=2*Math.PI*112;
+$('ring').style.strokeDasharray=RING_LEN;
+$('ring').style.strokeDashoffset=RING_LEN;
+
+let running=false, startTs=0, pausedAt=0, tick=null, lastIdx=-1, announced5=false;
+
+function elapsed(){return running?(Date.now()-startTs)/1000:pausedAt;}
+function fmt(s){s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');}
+
+function stepAt(t){
+  for(let i=0;i<P.steps.length;i++){const s=P.steps[i];if(t>=s.start&&t<s.end)return i;}
+  return P.steps.length-1;
+}
+/* 招牌黑科技：即時目標水量 —— 依流速在段內線性插值，讓使用者「追針」 */
+function liveTarget(t,i){
+  const s=P.steps[i], prev=i>0?P.steps[i-1].target:0;
+  if(!s.pour)return s.target;
+  const delta=s.target-prev;
+  if(delta<=0)return s.target;
+  const pourDur=Math.max(1, s.pourSec || (s.end-s.start));  // 由步驟自帶的注水秒數決定節拍
+  const frac=clamp((t-s.start)/pourDur,0,1);
+  return Math.round(prev+delta*frac);
+}
+
+/* 產生該段的語音摘要：注水段報「注到 X 克，流速…」；非注水段報等待秒數 */
+function stepBrief(i){
+  const s=P.steps[i], prev=i>0?P.steps[i-1].target:0, dur=Math.round(s.end-s.start);
+  if(s.pour&&s.target>prev){
+    const add=s.target-prev;
+    let txt=`注到 ${s.target} 克，這段加 ${add} 克`;
+    if(s.flow&&s.flow!=='—')txt+=`，流速 ${s.flow}`;
+    return txt;
+  }
+  return `維持 ${dur} 秒`;
+}
+
+function loop(){
+  const t=elapsed(), i=stepAt(t), s=P.steps[i];
+  const done=t>=P.steps[P.steps.length-1].end;
+  $('timer').textContent=fmt(t);
+  $('timer').className='timer '+(done?'done':running?'run':'');
+
+  // 換段事件：語音 + 震動 + 音效
+  if(i!==lastIdx){
+    lastIdx=i;announced5=false;
+    $('actText').textContent=s.action;
+    $('flowText').textContent=s.flow;
+    $('tipBox').style.display=s.tip?'flex':'none';
+    $('tipText').textContent=s.tip;
+    $('stepGoal').textContent='本段目標 '+s.target+' g';
+    if(running){
+      speak(s.action);
+      speak(stepBrief(i),true);          // 接續播報：目標水量＋流速
+      buzz([80,60,80]);beep(s.pour?880:520);
+    }
+    renderStrip(i,t);
+  }
+  // 段末 8 秒預告下一段要做什麼
+  if(running&&!announced5&&i<P.steps.length-1&&s.end-t<=8){
+    announced5=true;
+    const nx=P.steps[i+1];
+    speak('準備，'+nx.action+'，'+stepBrief(i+1));
+    beep(660,0.08);
+  }
+
+  // 節拍器
+  const lv=liveTarget(t,i);
+  $('liveG').innerHTML=lv+'<small> g</small>';
+  const frac=clamp(lv/P.total,0,1);
+  $('ring').style.strokeDashoffset=RING_LEN*(1-frac);
+  $('ring').style.stroke=done?'var(--ok)':(s.pour?'var(--crema)':'var(--water)');
+
+  if(done&&running){finishBrew();}
+}
+
+function renderStrip(cur,t){
+  $('strip').innerHTML=P.steps.filter(s=>s.pour||/濾乾|品嚐|完成|取下/.test(s.action)).map(s=>{
+    const idx=P.steps.indexOf(s);
+    const cls=idx===cur?'now':(t>=s.end?'past':'');
+    return `<div class="seg ${cls}"><div class="t">${fmt(s.start)}</div><div class="g">${s.target}g</div><div class="a">${s.action.replace(/【.*?】/,'')}</div></div>`;
+  }).join('');
+}
+
+/* ---- 控制 ---- */
+let cdTimer=null;
+
+function startTimer(){
+  startTs=Date.now()-pausedAt*1000;running=true;
+  $('playBtn').textContent='暫停';$('playBtn').classList.add('pause');
+  tick=setInterval(loop,250);
+  requestWake();
+  loop();
+}
+
+/* 開始前 3 秒倒數：讓你有時間把手伸到手沖壺上 */
+function countdown(done){
+  let n=3;
+  $('playBtn').textContent='準備';$('playBtn').disabled=true;
+  $('ring').style.stroke='var(--water)';
+  const show=()=>{
+    $('liveG').innerHTML=n+'<small></small>';
+    $('stepGoal').textContent='即將開始';
+    $('ring').style.strokeDashoffset=RING_LEN*(1-n/3);
+  };
+  show();speak(String(n));beep(620,0.12);buzz(60);
+  cdTimer=setInterval(()=>{
+    n--;
+    if(n>0){show();speak(String(n));beep(620,0.12);buzz(60);return;}
+    clearInterval(cdTimer);cdTimer=null;
+    $('playBtn').disabled=false;
+    beep(980,0.3);buzz([120,60,120]);
+    const s0=P.steps[0];
+    speak('開始，'+s0.action);speak(stepBrief(0),true);
+    done();
+  },1000);
+}
+function stopCountdown(){
+  if(cdTimer){clearInterval(cdTimer);cdTimer=null;$('playBtn').disabled=false;}
+}
+
+$('playBtn').onclick=()=>{
+  if(cdTimer)return;                      // 倒數中不重複觸發
+  if(!running){
+    if(pausedAt===0){countdown(startTimer);}   // 全新開始 → 先倒數
+    else{startTimer();}                        // 從暫停繼續 → 直接續跑
+  }else{
+    pausedAt=elapsed();running=false;clearInterval(tick);
+    $('playBtn').textContent='繼續';$('playBtn').classList.remove('pause');
+    try{TTS()&&TTS().cancel();}catch(e){}
+  }
+};
+$('resetBtn').onclick=()=>{
+  stopCountdown();
+  running=false;clearInterval(tick);pausedAt=0;lastIdx=-1;announced5=false;
+  try{TTS()&&TTS().cancel();}catch(e){}
+  $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
+  $('finishBox').style.display='none';
+  loop();
+};
+$('goBrew').onclick=()=>{calc();$('setupPage').style.display='none';$('brewPage').style.display='block';$('resetBtn').onclick();window.scrollTo(0,0);};
+$('backBtn').onclick=()=>{stopCountdown();running=false;clearInterval(tick);releaseWake();$('brewPage').style.display='none';$('setupPage').style.display='block';};
+
+function finishBrew(){
+  running=false;clearInterval(tick);
+  $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
+  $('finishBox').style.display='block';
+  speak('沖煮完成，請移開濾杯，搖晃咖啡液後品嚐');buzz([200,100,200,100,400]);beep(990,0.4);
+  releaseWake();
+}
+
+/* ============================================================
+   黑科技模組：語音 / 震動 / 音效 / Wake Lock（全部防呆降級）
+   ============================================================ */
+let voiceOn=true, buzzOn=true;
+/* 取得可用的語音合成器；不支援或被停用時回傳 null，全程靜默降級 */
+function TTS(){try{return (typeof speechSynthesis!=='undefined'&&speechSynthesis&&speechSynthesis.speak)?speechSynthesis:null;}catch(e){return null;}}
+
+/* ---- 語音唸讀正規化：把符號與英文轉成 TTS 唸得順的中文 ---- */
+const SPEAK_MAP=[
+  [/【|】/g,'，'],
+  // 破音字修正：TTS 常把「乾」唸成 qián（聽起來像「敢」），改用不會唸錯的同義詞
+  [/滴乾/g,'滴完'],[/濾乾/g,'濾完'],[/瀝乾/g,'瀝出'],[/烘乾/g,'烘到全乾'],
+  [/乾淨/g,'潔淨'],[/乾粉團/g,'結塊的粉團'],[/乾粉/g,'未濕潤的粉'],[/乾燥/g,'不含水氣'],[/乾澀/g,'澀感'],
+  [/重複/g,'再一次'],[/濃度/g,'濃度'],
+  [/[（(]\s*[A-Za-z0-9 .·'’\-\/&+]+\s*[）)]/g,''],      // 純英文對照括號直接拿掉，避免重複唸
+  [/Tetsu\s*Kasuya/gi,'粕谷哲'],[/James\s*Hoffmann/gi,'霍夫曼'],
+  [/Scott\s*Rao/gi,'史考特饒'],[/Lance\s*Hedrick/gi,'蘭斯'],[/Kono/gi,'河野'],[/Matsuya/gi,'松屋'],
+  [/(\d+)\s*[-–~至]\s*(\d+)\s*g\/s/g,'每秒 $1 到 $2 克'],   // 6-8 g/s → 每秒六到八克
+  [/約\s*([\d.]+)\s*g\/s/g,'大約每秒 $1 克'],
+  [/([\d.]+)\s*g\/s/g,'每秒 $1 克'],
+  [/([\d.]+)\s*(?:g|ml|克|公克)\b/g,'$1 克'],
+  [/([\d.]+)\s*°C/g,'$1 度'],
+  [/1\s*:\s*([\d.]+)/g,'一比 $1'],
+  [/4\s*:\s*6\s*法/g,'四比六手法'],
+  [/(\d+)\s*%/g,'百分之 $1'],
+  [/50\s*元硬幣/g,'五十元硬幣'],
+  [/V60/gi,'V 六十'],
+  [/Swirl/gi,'搖晃濾杯'],
+  [/Rao\s*Spin/gi,'旋轉濾杯'],
+  [/Bypass|bypass/g,'兌水'],
+  [/Flash\s*Brew/gi,'急速冷萃'],
+  [/One\s*Pour/gi,'一刀流'],
+  [/Drip\s*Bag/gi,'濾掛'],
+  [/Clever|Hario\s*Switch/gi,'聰明濾杯'],
+  [/CO2/g,'二氧化碳'],
+  [/Body/g,'醇厚度'],
+  [/TDS/g,'濃度'],
+  [/[（(]([^）)]*)[）)]/g,'，$1，'],                          // 括號改逗號，避免被跳過
+  [/[·・／\/]/g,'，'],
+  [/[＝=]/g,'等於'],
+  [/[＋+]/g,'加'],
+  [/(\d)\s*[—–\-]\s*(\d)/g,'$1到$2'],
+  [/\s*[—–]{1,2}\s*/g,'，'],
+  [/[「」『』"'#*_]/g,''],
+  [/\s*，\s*/g,'，'],
+  [/([\u4e00-\u9fa5]{2,6})\s*\1/g,'$1'],   // 中英對照造成的重複詞收斂
+  [/，{2,}/g,'，'],
+  [/\s{2,}/g,' '],
+];
+function sayable(txt){
+  let s=String(txt||'');
+  SPEAK_MAP.forEach(([re,to])=>{s=s.replace(re,to);});
+  return s.replace(/^，+|，+$/g,'').trim();
+}
+
+/* ---- zh-TW 嗓音挑選：優先本地中文語音，避免落到唸不順的預設語音 ---- */
+const VOICE_KEY='dripmatrix_voice_v1';
+let zhVoice=null;
+function zhVoices(){
+  const t=TTS(); if(!t||!t.getVoices)return [];
+  return (t.getVoices()||[]).filter(v=>/^zh/i.test(v.lang));
+}
+/* 嗓音評分：進階／Premium 版本音質遠優於系統預設的 compact 機器音 */
+function voiceScore(v){
+  let s=0;
+  if(/zh[-_]TW/i.test(v.lang))s+=100;
+  else if(/zh[-_](HK|CN)/i.test(v.lang))s+=40;
+  if(/enhanced|premium|neural|進階|優質/i.test(v.name))s+=50;
+  if(/siri/i.test(v.name))s+=30;
+  if(/compact|精簡/i.test(v.name))s-=30;
+  return s;
+}
+function pickVoice(){
+  const saved=(()=>{try{return localStorage.getItem(VOICE_KEY);}catch(e){return null;}})();
+  const vs=zhVoices();
+  if(!vs.length){zhVoice=null;return;}
+  zhVoice = (saved&&vs.find(v=>v.name===saved)) || vs.slice().sort((a,b)=>voiceScore(b)-voiceScore(a))[0] || null;
+  renderVoicePicker();
+}
+function renderVoicePicker(){
+  const sel=$('voiceSel'), box=$('voiceBox'); if(!sel||!box)return;
+  const vs=zhVoices().slice().sort((a,b)=>voiceScore(b)-voiceScore(a));
+  if(vs.length<1){box.style.display='none';return;}
+  box.style.display='block';
+  sel.innerHTML=vs.map(v=>`<option value="${v.name}">${v.name}（${v.lang}）</option>`).join('');
+  if(zhVoice)sel.value=zhVoice.name;
+}
+if(TTS()){pickVoice();TTS().addEventListener?.('voiceschanged',pickVoice);}
+
+/* queue=true 代表接續播報，不打斷前一句（用於「目標＋流速」的補充說明） */
+function speak(txt,queue){
+  if(!voiceOn||!TTS())return;
+  try{
+    if(!queue)TTS().cancel();
+    const u=new SpeechSynthesisUtterance(sayable(txt));
+    u.lang='zh-TW'; if(zhVoice)u.voice=zhVoice;
+    u.rate=0.98; u.pitch=1.0;
+    TTS().speak(u);
+  }catch(e){/* 靜默降級 */}
+}
+function buzz(pat){if(buzzOn&&navigator.vibrate){try{navigator.vibrate(pat);}catch(e){}}}
+let ac=null;
+function beep(freq,dur=0.15){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.frequency.value=freq;o.type='sine';
+    g.gain.setValueAtTime(0.12,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
+    o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+dur);
+  }catch(e){}
+}
+let wakeLock=null, wantWake=false;
+async function requestWake(){
+  if(!wantWake||!('wakeLock'in navigator))return;
+  try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+}
+function releaseWake(){try{wakeLock&&wakeLock.release();wakeLock=null;}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)requestWake();});
+
+$('tglVoice').onclick=e=>{voiceOn=!voiceOn;e.target.classList.toggle('on',voiceOn);toast(voiceOn?'語音導航開啟':'語音導航關閉');};
+
+/* 嗓音切換與試聽 */
+$('voiceSel').addEventListener('change',()=>{
+  const v=zhVoices().find(x=>x.name===$('voiceSel').value);
+  if(!v)return;
+  zhVoice=v;
+  try{localStorage.setItem(VOICE_KEY,v.name);}catch(e){}
+  speak('注到 180 克，流速每秒 4 到 5 克');
+});
+$('voiceTest').onclick=()=>speak('準備，第二刀，五十元硬幣繞圈，注到 180 克，這段加 120 克，流速每秒 4 到 5 克');
+
+/* 若系統只裝了精簡版嗓音，提示使用者可下載音質更好的版本 */
+(function(){
+  const box=$('voiceHint'); if(!box)return;
+  const iOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  const vs=zhVoices();
+  const hasGood=vs.some(v=>/enhanced|premium|neural|進階|優質/i.test(v.name));
+  if(!vs.length){box.textContent='此瀏覽器未提供中文語音，語音導航將無法發聲。';return;}
+  if(hasGood){box.textContent='已偵測到進階嗓音，音質較自然。';return;}
+  box.innerHTML = iOS
+    ? '目前只有系統精簡版嗓音（機器音）。到 <b>設定 → 輔助使用 → 朗讀內容 → 語音 → 中文（台灣）</b> 下載「美嘉（進階）」後，回到這裡即可選用，音質差異非常大。'
+    : '目前只有系統預設嗓音。安裝作業系統的中文進階語音套件後，這裡就會出現音質更好的選項。';
+})();
+$('tglBuzz').onclick=e=>{buzzOn=!buzzOn;e.target.classList.toggle('on',buzzOn);};
+$('tglWake').onclick=async e=>{
+  wantWake=!wantWake;e.target.classList.toggle('on',wantWake);
+  if(wantWake){if('wakeLock'in navigator){await requestWake();toast('螢幕恆亮已啟用');}else toast('此瀏覽器不支援 Wake Lock');}
+  else{releaseWake();toast('螢幕恆亮已關閉');}
+};
+
+/* ============================================================
+   沖煮日誌（localStorage，防呆 try/catch，上限 30 筆）
+   ============================================================ */
+const LOG_KEY='pourmaster_logs_v1';
+const SET_KEY='pourmaster_setting_v1';
+let rating=0;
+
+/* 上一次的設定：每次運算後自動寫回，下次開啟直接沿用 */
+function snapshot(){
+  return {...S,latteStrength:$('latteStrength').value,milkRatio:$('milkRatio').value,icePct:$('icePct').value};
+}
+function saveSettings(){try{localStorage.setItem(SET_KEY,JSON.stringify(snapshot()));}catch(e){}}
+function applySettings(d,silent){
+  if(!d)return false;
+  ['dose','roast','process','origin','dripper','master','tweak'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k];});
+  S.dose=clamp(+S.dose||20,8,40);S.tweak=clamp(+S.tweak||0,-2,2);
+  $('dose').value=S.dose;$('tweak').value=S.tweak;
+  if(S.master.startsWith('c:')&&!MX[S.master])S.master='threepour';  // 自訂手法已被刪除
+  ['roast','process','origin','dripper','master'].forEach(k=>{if($(k).querySelector(`option[value="${S[k]}"]`))$(k).value=S[k];else S[k]=$(k).value;});
+  if(d.latteStrength)$('latteStrength').value=d.latteStrength;
+  if(d.milkRatio)$('milkRatio').value=d.milkRatio;
+  if(d.icePct)$('icePct').value=d.icePct;
+  [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===S.dose));
+  calc();
+  if(!silent)toast('已載入該次沖煮參數');
+  return true;
+}
+function loadSettings(){
+  try{return applySettings(JSON.parse(localStorage.getItem(SET_KEY)),true);}catch(e){return false;}
+}
+
+function loadLogs(){try{return JSON.parse(localStorage.getItem(LOG_KEY))||[];}catch(e){return[];}}
+function writeLogs(logs){
+  try{localStorage.setItem(LOG_KEY,JSON.stringify(logs.slice(0,50)));renderLogs();return true;}
+  catch(e){toast('寫入失敗：瀏覽器儲存空間受限');return false;}
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function logTitle(l){return l.name?esc(l.name):`${esc(l.roast)}·${esc(l.master)}`;}
+
+function renderLogs(){
+  const logs=loadLogs();
+  $('logCount').textContent=logs.length?`共 ${logs.length} 筆紀錄（點擊展開）`:'尚無紀錄';
+  $('logList').innerHTML=logs.map((l,i)=>`
+    <div class="log-item">
+      <div class="log-head">
+        <span class="log-name">${logTitle(l)}</span>
+        <span class="log-star">${'★'.repeat(l.rating)||'—'}</span>
+      </div>
+      <div class="log-meta">${l.date} ｜ ${esc(l.roast)}·${esc(l.master)} ｜ ${l.temp}°C / ${l.total}g</div>
+      <div class="log-acts">
+        ${l.cfg?`<button class="btn-mini recall" data-i="${i}">重現</button>`:''}
+        <button class="btn-mini rename" data-i="${i}">改名</button>
+        <button class="btn-mini del" data-i="${i}">刪除</button>
+      </div>
+    </div>`).join('');
+  const last=logs[0];
+  $('lastBox').innerHTML = last
+    ? `上次沖煮：<b>${logTitle(last)}</b>　${last.date}　${last.temp}°C / ${last.total}g ${'★'.repeat(last.rating)}
+       ${last.cfg?'<button class="btn-mini recall" data-i="0" style="margin-left:6px">一鍵沿用</button>':''}`
+    : '尚無沖煮紀錄。完成第一杯後，這裡會顯示上次的參數並可一鍵沿用。';
+}
+
+/* 事件委派：重現 / 改名 / 刪除 */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.btn-mini');if(!b)return;
+  const i=+b.dataset.i, logs=loadLogs(), l=logs[i];
+  if(!l)return;
+  if(b.classList.contains('recall')){ if(l.cfg)applySettings(l.cfg); return; }
+  if(b.classList.contains('rename')){
+    const v=prompt('為這筆紀錄命名：', l.name||`${l.roast}·${l.master}`);
+    if(v===null)return;
+    const n=v.trim().slice(0,24);
+    if(n)l.name=n; else delete l.name;
+    if(writeLogs(logs))toast(n?'名稱已更新':'已清除自訂名稱');
+    return;
+  }
+  if(b.classList.contains('del')){
+    if(!confirm(`確定刪除「${l.name||l.roast+'·'+l.master}」這筆紀錄？此動作無法復原。`))return;
+    logs.splice(i,1);
+    if(writeLogs(logs))toast('紀錄已刪除');
+  }
+});
+$('stars').addEventListener('click',e=>{
+  const v=+e.target.dataset.v;if(!v)return;rating=v;
+  [...$('stars').children].forEach((s,i)=>s.classList.toggle('lit',i<v));
+});
+$('saveLog').onclick=()=>{
+  const logs=loadLogs();
+  const nm=($('brewName').value||'').trim().slice(0,24);
+  const entry={date:new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
+    roast:ROASTS[S.roast].name,master:(MX[S.master]||MASTERS.threepour).name.split('（')[0],
+    temp:P.temp,total:P.total,rating,cfg:snapshot()};
+  if(nm)entry.name=nm;
+  logs.unshift(entry);
+  if(writeLogs(logs)){$('brewName').value='';toast('已儲存至沖煮日誌');}
+};
+
+/* ============================================================
+   初始化與事件綁定
+   ============================================================ */
+fillSelect($('roast'),ROASTS);fillSelect($('process'),PROCESSES);
+fillSelect($('origin'),ORIGINS);fillSelect($('dripper'),DRIPPERS);refreshMasters();fillSelect($('master'),MX);
+$('roast').value=S.roast;$('process').value=S.process;$('origin').value=S.origin;
+$('dripper').value=S.dripper;$('master').value=S.master;
+
+// 粉量快速鍵
+$('doseChips').innerHTML=[12,20,30,40].map(g=>`<span class="chip${g===20?' on':''}" data-g="${g}">${g}g</span>`).join('');
+$('doseChips').addEventListener('click',e=>{
+  const g=+e.target.dataset.g;if(!g)return;
+  S.dose=g;$('dose').value=g;
+  [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===g));
+  calc();
+});
+$('dose').addEventListener('input',()=>{S.dose=clamp(+$('dose').value||20,8,40);[...$('doseChips').children].forEach(c=>c.classList.remove('on'));calc();});
+['roast','process','origin','dripper','master'].forEach(k=>$(k).addEventListener('change',()=>{
+  S[k]=$(k).value;
+  // 濾掛掛耳市售規格多為 10–12g，粉量過大會塞爆掛耳，自動修正
+  if(k==='master'&&S.master==='dripbag'&&S.dose>15){
+    S.dose=12;$('dose').value=12;
+    [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===12));
+    toast('已將粉量調整為濾掛典型的 12g');
+  }
+  calc();
+}));
+$('tweak').addEventListener('input',()=>{S.tweak=+$('tweak').value;calc();});
+['roomT','kettleW'].forEach(k=>$(k).addEventListener('input',renderMix));
+['latteStrength','milkRatio','icePct'].forEach(k=>$(k).addEventListener('change',calc));
+
+/* ============================================================
+   我的手法：清單 / 編輯器 / 儲存
+   ============================================================ */
+let editingId=null;
+
+function renderCustoms(){
+  const cs=loadCustoms();
+  $('customList').innerHTML = cs.length ? cs.map(c=>`
+    <div class="custom-item">
+      <div style="min-width:0">
+        <div class="cn">${esc(c.name)}</div>
+        <div class="cm">${c.steps.length} 段 ｜ 總時 ${fmt(c.steps.reduce((a,s)=>a+s.dur,0))}
+          ${c.ratio?` ｜ 1:${c.ratio}`:''}${c.temp?` ｜ ${c.temp}°C`:''}</div>
+      </div>
+      <div class="acts">
+        <button class="btn-mini cuse" data-id="${c.id}">使用</button>
+        <button class="btn-mini cedit" data-id="${c.id}">編輯</button>
+        <button class="btn-mini del cdel" data-id="${c.id}">刪除</button>
+      </div>
+    </div>`).join('')
+    : '<div class="hint">尚未建立自訂手法。你可以從零新建，或按「複製目前手法為範本」把現在這套參數存下來再微調。</div>';
+}
+
+function addStepRow(s={action:'',dur:30,pct:100,pour:true}){
+  const d=document.createElement('div');
+  d.className='step-row';
+  d.innerHTML=`<input type="text" class="s-act" maxlength="40" value="${esc(s.action||'')}" placeholder="動作描述">
+    <input type="number" class="s-dur" min="1" max="600" value="${s.dur}">
+    <input type="number" class="s-pct" min="0" max="100" value="${s.pct}">
+    <input type="checkbox" class="chk s-pour" ${s.pour?'checked':''}>
+    <button class="rm" title="刪除此段">✕</button>`;
+  d.querySelector('.rm').onclick=()=>d.remove();
+  $('stepRows').appendChild(d);
+}
+
+function openEditor(c){
+  editingId=c?c.id:null;
+  $('cName').value=c?c.name:'';
+  $('cRatio').value=c&&c.ratio?c.ratio:'';
+  $('cTemp').value=c&&c.temp?c.temp:'';
+  $('cGrind').value=c&&c.grind?c.grind:'';
+  $('stepRows').innerHTML='';
+  (c?c.steps:[{action:'悶蒸',dur:30,pct:15,pour:true},{action:'注水至滿',dur:40,pct:100,pour:true},{action:'等待濾乾',dur:45,pct:100,pour:false}])
+    .forEach(addStepRow);
+  $('customEditor').style.display='block';
+  $('customEditor').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeEditor(){$('customEditor').style.display='none';editingId=null;}
+
+function readEditor(){
+  const name=$('cName').value.trim().slice(0,20);
+  if(!name){toast('請先填寫手法名稱');return null;}
+  const rows=[...$('stepRows').children];
+  if(!rows.length){toast('至少需要一個沖煮段落');return null;}
+  const steps=[];let prev=-1;
+  for(const r of rows){
+    const dur=clamp(+r.querySelector('.s-dur').value||0,1,600);
+    const pct=clamp(+r.querySelector('.s-pct').value||0,0,100);
+    if(pct<prev){toast('累積水量必須逐段遞增，請檢查');return null;}
+    prev=pct;
+    steps.push({action:r.querySelector('.s-act').value.trim().slice(0,40),dur,pct,pour:r.querySelector('.s-pour').checked});
+  }
+  if(steps[steps.length-1].pct!==100){toast('最後一段的累積水量必須是 100%');return null;}
+  if(!steps.some(s=>s.pour)){toast('至少要有一個「注水」段落');return null;}
+  const ratio=+$('cRatio').value||null, temp=+$('cTemp').value||null;
+  return {id:editingId||('u'+Date.now().toString(36)),name,steps,
+    ratio:ratio?clamp(ratio,5,20):null, temp:temp?clamp(temp,70,100):null,
+    grind:$('cGrind').value.trim().slice(0,30)||null};
+}
+
+$('newCustom').onclick=()=>openEditor(null);
+$('addStep').onclick=()=>addStepRow({action:'',dur:20,pct:100,pour:true});
+$('cancelCustom').onclick=closeEditor;
+
+/* 把目前運算出的時間軸複製成可編輯範本 */
+$('cloneCustom').onclick=()=>{
+  const base=(MX[S.master]||MASTERS.threepour).name.split('（')[0];
+  openEditor({id:null,name:base+' 改',ratio:P.ratio,temp:P.temp,grind:null,
+    steps:P.steps.map(s=>({action:s.action.replace(/【|】/g,''),dur:Math.round(s.end-s.start),
+      pct:Math.round(s.target/P.total*100),pour:!!s.pour}))});
+  editingId=null;
+  toast('已複製目前手法，修改後儲存為新手法');
+};
+
+$('saveCustom').onclick=()=>{
+  const c=readEditor(); if(!c)return;
+  const cs=loadCustoms();
+  const i=cs.findIndex(x=>x.id===c.id);
+  if(i>=0)cs[i]=c; else cs.unshift(c);
+  if(!writeCustoms(cs))return;
+  refreshMasters();
+  const cur=S.master;
+  fillSelect($('master'),MX);
+  S.master=MX['c:'+c.id]?'c:'+c.id:cur;
+  $('master').value=S.master;
+  renderCustoms();closeEditor();calc();
+  toast(i>=0?'手法已更新':'手法已儲存並套用');
+};
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.btn-mini');if(!b||!b.dataset.id)return;
+  const cs=loadCustoms(), c=cs.find(x=>x.id===b.dataset.id);if(!c)return;
+  if(b.classList.contains('cuse')){
+    S.master='c:'+c.id;$('master').value=S.master;calc();
+    toast('已套用「'+c.name+'」');window.scrollTo({top:0,behavior:'smooth'});return;
+  }
+  if(b.classList.contains('cedit')){openEditor(c);return;}
+  if(b.classList.contains('cdel')){
+    if(!confirm(`確定刪除自訂手法「${c.name}」？此動作無法復原。`))return;
+    const rest=cs.filter(x=>x.id!==c.id);
+    if(!writeCustoms(rest))return;
+    refreshMasters();fillSelect($('master'),MX);
+    if(S.master==='c:'+c.id)S.master='threepour';   // 刪掉正在使用的手法 → 退回預設
+    $('master').value=S.master;
+    renderCustoms();closeEditor();calc();toast('已刪除');
+  }
+});
+
+/* ============================================================
+   PWA：Service Worker 註冊碼由 vite-plugin-pwa（registerType: autoUpdate）
+   於建置時自動 inline 注入，此處不再手動註冊。
+   安裝入口交還給瀏覽器原生選單（Chrome「安裝應用程式」/ Safari「加入主畫面」），
+   不在 App 內顯示任何安裝提示卡片。
+   ============================================================ */
+
+if(!loadSettings())calc();
+renderLogs();renderCustoms();
+</script>
+</body>
+</html>
