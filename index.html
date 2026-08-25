@@ -382,6 +382,34 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <li><b>偏苦澀</b>（過萃）→ 流速調慢 1～2 g/s、減少繞圈圈數、縮小繞圈範圍，或研磨調粗。</li>
         <li><b>偏酸、口感單薄</b>（萃取不足）→ 提高流速增強攪動、增加繞圈密度，或研磨調細、水溫調高。</li>
         <li><b>尾段出現澀感</b> → 提早移開濾杯，不要等最後那段細滴漏完。</li>
+        <li><b>前段注水速度是最有效的單一槓桿</b>：同豆同研磨同水溫的對照實驗裡，悶蒸後第一段用大水柱快注（約 9～10 g/s）＝酸質明亮清爽；放慢到 4～5 g/s＝甜感與厚實度明顯上升。本 App 的風味滑桿已直接連動這一段的節拍器流速，跟著指針追即可。唯一要注意的是：<b>水量放小時繞圈的攪拌力道仍要夠</b>，否則得到的只是萃取不均，不是甜。</li>
+        <li><b>段數也是槓桿</b>：段數越多、總接觸時間越長，萃取進程越往後段（甜）推。太酸時把兩段改三段、三段改四段，比直接動水溫安全得多。</li>
+      </ul>
+    </details>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">沖煮前置作業（悶蒸之前才是勝負關鍵）</summary>
+      <div class="hint" style="margin-top:8px">以下六項全部零成本，卻是新手與老手差距最大的地方。導航模式的計時從悶蒸開始，這些請在按下開始之前做完。</div>
+
+      <div class="kb-h">器材</div>
+      <ul class="kb">
+        <li><b>先用 3～5 顆豆推掉磨豆機殘粉</b>：注意是「顆」不是克。隔夜的殘粉會混進這一杯，帶出油耗味。推完把那點粉倒掉，再倒入正式的豆子。</li>
+        <li><b>濾紙折邊後壓到 100% 貼合</b>：先折下緣的接合線，撐開放進濾杯後用手把翹起的地方壓下去。沒貼合的濾紙會讓水從縫隙走掉，流速整個亂掉。</li>
+        <li><b>洗濾紙</b>：用熱水由中心向外把濾紙完全淋濕，沖掉紙味，同時順便預熱濾杯與下壺。<b>沖煮前記得把下壺裡這些水倒掉。</b></li>
+      </ul>
+
+      <div class="kb-h">粉層與手感</div>
+      <ul class="kb">
+        <li><b>落粉後輕搖濾杯把粉面搖平</b>：粉面不平，水就會從高處往低處流，第一步的悶蒸就已經不均勻了 —— 而悶蒸是全程對不均勻最敏感的一段。</li>
+        <li><b>正式沖之前先空繞二三十 cc 練水柱</b>：每次壺裡的水位不同、手的狀態也不同，先繞一下確認水柱粗細與繞圈速度是不是你要的，穩定度會差很多。</li>
+        <li><b>壺嘴貼近粉面（約 3～5 公分）</b>：離太遠水會飛濺、沖散粉層結構；貼近了力道自然柔和，粉層完整度才守得住。</li>
+      </ul>
+
+      <div class="kb-h">沖完之後</div>
+      <ul class="kb">
+        <li><b>下壺要搖勻再喝</b>：萃取的前段與後段濃度差很多，直接倒出來每一口都不一樣。輕輕搖晃（量大時用攪拌棒）讓風味一致，這一秒的動作影響比很多手法細節都大。</li>
       </ul>
     </details>
   </div>
@@ -389,6 +417,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
   <div class="card">
     <h2><span class="no">📓</span>沖煮日誌（本機儲存）</h2>
     <div class="reco" id="lastBox" style="margin-top:0;margin-bottom:10px"></div>
+    <div class="reco" id="calibBox" style="margin-top:0;margin-bottom:10px;display:none"></div>
     <details><summary id="logCount">尚無紀錄</summary><div id="logList"></div></details>
   </div>
 
@@ -450,7 +479,22 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 
   <div class="finish" id="finishBox">
     <div style="font-weight:800;color:var(--ok)">✅ 沖煮完成，移開濾杯，搖晃咖啡液後品嚐</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:6px">別忘了搖勻下壺再喝 — 前後段濃度差很多。</div>
     <div class="stars" id="stars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">實際總萃取時間（滴完為止）· 校準研磨度用</div>
+    <div class="chips" id="secsRow" style="justify-content:center;margin-top:0;margin-bottom:10px">
+      <span class="chip on" id="secsChip">--:--</span>
+      <span class="chip" id="secsEdit">手動修正</span>
+    </div>
+
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">這杯喝起來偏哪一邊？</div>
+    <div class="chips" id="verdictRow" style="justify-content:center;margin-top:0;margin-bottom:10px">
+      <span class="chip" data-v="sour">偏酸 / 太薄</span>
+      <span class="chip" data-v="good">剛剛好</span>
+      <span class="chip" data-v="bitter">偏苦 / 澀</span>
+    </div>
+
     <input type="text" id="brewName" maxlength="24" placeholder="為這杯命名（選填，如：古吉日曬 冰咖啡）" style="text-align:center;font-size:.88rem;margin-bottom:10px">
     <button class="btn-sm" id="saveLog">儲存本次沖煮紀錄</button>
   </div>
@@ -486,6 +530,7 @@ const DRIPPERS = {
   'v60':  {name:'圓錐濾杯（V60）',ratioMod:0,  grindNote:'',note:'流速快、香氣奔放、層次分明，但容錯率低，靠手法控制。適合淺焙。'},
   'flat': {name:'平底 / 蛋糕濾杯（Kalita）',ratioMod:-0.5,grindNote:'',note:'水流均勻通過所有粉，甜感與 Body 極佳，容錯率極高。適合中深焙或想把淺焙沖甜。'},
   'origami':{name:'溝槽混合型（Origami / 星芒）',ratioMod:0,grindNote:'（流速極快，建議再細 1 格）',note:'流速極快，依濾紙貼合度變化。搭配蛋糕紙＝偏甜；搭配錐形紙＝偏亮。'},
+  'switch':{name:'閥門式（Hario Switch / 聰明濾杯）',ratioMod:0,grindNote:'',note:'底部有閥門，可自由切換濾過與浸泡。關閥浸泡時萃取率由時間決定而非手法，容錯率最高；也是「上帝的食譜」這類降溫浸泡手法唯一做得出來的濾杯。',hasValve:true},
 };
 const MASTERS = {
   /* ===== 日常實戰 ===== */
@@ -495,6 +540,7 @@ const MASTERS = {
 
   /* ===== 冠軍手法 ===== */
   'tetsu46': {group:'冠軍手法',name:'4:6 法（Tetsu Kasuya · 世界冠軍）',note:'粗研磨、分 5 段、每段完全滴乾。前 40% 調酸甜、後 60% 調濃度。適合淺中焙，追求層次與乾淨度。',grind:'粗研磨（如法式濾壓）'},
+  'switch46':{group:'冠軍手法',name:'上帝的食譜（粕谷哲 · Switch 降溫浸泡）',note:'4:6 之後的新配方，需要有閥門的濾杯（Hario Switch / 聰明濾杯）。前段開閥低流速濾過，用高溫把香氣與酸質盡量帶出來；120 秒左右把水降到 70°C 並關閥轉為浸泡，用低溫把後段的苦澀擋在門外。等於同時用了「降溫」與「浸泡」兩道保險，酸被修飾、甜感扎實、Body 飽滿，淺焙深焙都適用。全程不超過 3 分鐘。',grind:'中細（與平常手沖相同）',ratioMod:-1,coolTo:70,needSwitch:true},
   'hoffmann':{group:'冠軍手法',name:'終極 V60（James Hoffmann · 世界冠軍）',note:'中細研磨、極高溫、悶蒸搖晃 Swirl，60% 大水柱快注。適合極淺焙難萃豆，追求風味強度與均勻。',grind:'偏細研磨'},
   'lance':   {group:'冠軍手法',name:'極長悶蒸（Lance Hedrick）',note:'悶蒸長達 2 分鐘讓粉吸飽水，之後 1-2 次大水流注完。極端甜感、手法最省事。',grind:null},
 
@@ -503,7 +549,7 @@ const MASTERS = {
   'matsuya': {group:'日系傳統',name:'松屋式（Matsuya · 高濃縮兌水）',note:'昭和名店手法。粗研磨、超長悶蒸 3 分鐘，再以點滴萃取出高濃縮液，最後直接兌熱水稀釋到目標量。只取最精華的前段，甜感濃郁卻毫無雜味。',grind:'粗研磨（如法式濾壓）',bypass:0.47},
 
   /* ===== 浸泡式 ===== */
-  'clever':  {group:'浸泡式',name:'聰明濾杯浸泡法（Clever / Hario Switch）',note:'閥門關閉先浸泡、時間到再開閥濾出。萃取率由「浸泡時間」決定而非手法，是所有沖煮法中容錯率最高的一種 — 幾乎不可能失敗，甜感與 Body 極飽滿。',grind:'中粗（粗鹽）',tempMod:-1,tempLog:'浸泡式萃取效率高，降溫防過萃'},
+  'clever':  {group:'浸泡式',name:'聰明濾杯浸泡法（Clever / Hario Switch）',note:'閥門關閉先浸泡、時間到再開閥濾出。萃取率由「浸泡時間」決定而非手法，是所有沖煮法中容錯率最高的一種 — 幾乎不可能失敗，甜感與 Body 極飽滿。',grind:'中粗（粗鹽）',tempMod:-1,tempLog:'浸泡式萃取效率高，降溫防過萃',needSwitch:true},
 
   /* ===== 特殊飲品 ===== */
   'dripbag': {group:'特殊飲品',name:'濾掛掛耳專用（Drip Bag）',note:'粉層極薄、掛耳無粉牆，先天萃取不足且極易走水。對策：水溫拉高、水柱放到最細、分三段拉長接觸時間，絕不擠壓濾袋。',grind:'濾掛已預磨（中細），無法調整 — 改用水溫與注水節奏控制',tempMod:1,tempLog:'濾掛薄粉層散熱極快'},
@@ -588,7 +634,13 @@ function calc(){
   if(mst.tempFixed){temp=mst.tempFixed;logs.push(`自訂手法固定水溫 ${temp}°C`);}
   temp=clamp(Math.round(temp),75,100);
 
-  // 5) 粉水比：濾杯幾何 + 風味（要甜→比例縮短一點會更醇；此處沿用原引擎：tweak 正=甜=略縮）
+  // 5) 粉水比：濾杯幾何 + 風味
+  //    ── 方向定義（v2 修正）──────────────────────────────────
+  //    濾杯裡注入的水量＝萃取進程的刻度：水越少停在越前段（酸），水越多推到越後段（甜）。
+  //    舊版把 tweak 正（甜）接成「縮短比例」，方向與同一次運算的研磨調細、水溫加溫相反，
+  //    三個槓桿有一個在互扯。現改為 甜→加水、酸→減水，讓三者一致往同方向推。
+  //    上限 1:18 是稀薄臨界，超過就只是變淡而不是變甜，故於 warns 攔截。
+  //    ──────────────────────────────────────────────────────
   let ratio;
   if(mst.ratioFixed){ratio=clamp(mst.ratioFixed,5,20);logs.push(`自訂手法固定粉水比 1:${ratio}`);}
   else if(mst.ratio){
@@ -596,7 +648,8 @@ function calc(){
     logs.push(`高濃度基底鎖定 1:${ratio}`);
   }
   else{
-    ratio=clamp(+(base.baseRatio + drp.ratioMod + (mst.ratioMod||0) + S.tweak*-0.5).toFixed(1),9,18);
+    ratio=clamp(+(base.baseRatio + drp.ratioMod + (mst.ratioMod||0) + S.tweak*0.5).toFixed(1),9,18);
+    if(S.tweak!==0)logs.push(`風味微調 粉水比 ${S.tweak>0?'+':''}${S.tweak*0.5}（${S.tweak>0?'加水把萃取推向後段增甜':'減水把萃取停在前段提酸'}）`);
     if(mst.ratioMod)logs.push('冰飲補強濃度 '+mst.ratioMod);
   }
   let total=Math.round(S.dose*ratio);
@@ -641,6 +694,12 @@ function calc(){
     warns.push('暴力濃縮模式流速極慢：秤到目標水量就立刻移開濾杯，尾段的乾澀不要留。');
   if(iced&&iced.hot < S.dose*3.5)
     warns.push(`熱水僅 ${iced.hot}g，扣掉咖啡粉持液 ${S.dose*2}g 後幾乎流不進下壺。請降低冰塊比例或拉長粉水比。`);
+  if(mst.needSwitch&&!DRIPPERS[S.dripper]?.hasValve)
+    warns.push('此手法必須用「有閥門」的濾杯（Hario Switch、聰明濾杯）才做得出後段浸泡。手邊只有 V60 或蛋糕濾杯的話，請改選其他手法。');
+  if(ratio>=17.5)
+    warns.push(`粉水比已達 1:${ratio}，再加水只會變稀薄而不會更甜。想再往甜感推，請改用研磨調細或增加注水段數。`);
+  if(S.dose>=26&&(S.roast==='dark'||S.roast==='med-dark'))
+    warns.push(`中深焙做兩人份時，粉量不要直接把一人份翻倍 —— 深焙溶出率高，翻倍容易過萃而乾苦。建議減 1 到 2 克（約 ${Math.max(8,S.dose-2)}g）並把研磨再調粗一點點。`);
 
   // 6) 研磨度
   let grind = mst.grind || base.grind;
@@ -654,7 +713,10 @@ function calc(){
   // 7) 產生步驟（含等待滴乾，時間軸自動生成）
   const steps=buildSteps(total,milk,bypass);
 
-  P={temp,ratio,total,grind,steps,logs,milk,iced,bypass,warns,flowNote:proc.flow};
+  logs.push(`前段流速 ${frontRate()} g/s（${S.tweak>0?'放慢拉長攪拌走甜厚':S.tweak<0?'加快大水柱走酸亮':'中性基準'}）`);
+
+  P={temp,ratio,total,grind,steps,logs,milk,iced,bypass,warns,flowNote:proc.flow,
+     front:frontRate(),coolTemp:mst.coolTo||null,plan:steps.length?steps[steps.length-1].end:0};
   renderBlueprint();
   saveSettings();
 }
@@ -667,9 +729,19 @@ function calc(){
                     平均值必然較低（約 3~4 g/s），這才是秤上會持續顯示的數字。
    ────────────────────────────────────────────── */
 const POUR_RATE={ B:3.5, S:6.5, F:9 };   // 悶蒸 / 標準 / 快速大水流
+
+/* 前段注水流速：全片最有實證的風味槓桿。
+   悶蒸後第一段主注水的速度直接決定酸甜走向 —— 同豆同研磨同水溫的對照實驗顯示，
+   前段約 10 g/s 大水柱＝酸質明亮清爽；4~5 g/s 慢注＝甜感與厚實度。
+   原理是慢注拉長了前段的攪拌與接觸時間，而不是靠改變總水量。
+   注意：水量放小時攪拌力道仍要夠，否則只是萃取不均而非增甜。      */
+function frontRate(){ return +clamp(6.5 - S.tweak, 4.5, 8.5).toFixed(1); }
+/* 'S1' = 前段主注水，流速隨風味滑桿浮動；其餘模式維持固定值 */
+function pourRate(mode){ return mode==='S1' ? frontRate() : POUR_RATE[mode]; }
+
 function buildSteps(total,milk,bypass){
   const d=S.dose, tw=S.tweak, st=[];
-  /* mode: 'B'悶蒸 'S'標準 'F'快速 → 爆發模型；'C'連續 'D'點滴 → 整段出水 */
+  /* mode: 'B'悶蒸 'S'標準 'S1'前段主注水 'F'快速 → 爆發模型；'C'連續 'D'點滴 → 整段出水 */
   const push=(dur,target,action,tip,pour,mode)=>{
     const start=st.length?st[st.length-1].end:0;
     const prev=st.length?st[st.length-1].target:0;
@@ -677,16 +749,26 @@ function buildSteps(total,milk,bypass){
     const delta=target-prev;
     let flow='—', pourSec=0;
     if(pour&&delta>0){
-      const cont = !POUR_RATE[mode];
-      pourSec = cont ? dur : Math.min(dur, Math.max(3, Math.round(delta/POUR_RATE[mode])));
+      const cont = !pourRate(mode);
+      pourSec = cont ? dur : Math.min(dur, Math.max(3, Math.round(delta/pourRate(mode))));
       const r=delta/pourSec;
       flow = r<1.5 ? `約 ${r.toFixed(1)} g/s`
                    : `${Math.max(1,Math.round(r-0.5))}-${Math.round(r+0.5)} g/s`;
     }
     st.push({start,end:start+dur,target,action,tip,flow,pour:!!pour,pourSec});
   };
-  const durB=(delta,mode,wait)=>Math.max(6,Math.round(delta/POUR_RATE[mode]))+(wait||0);
+  const durB=(delta,mode,wait)=>Math.max(6,Math.round(delta/pourRate(mode)))+(wait||0);
   const durC=(delta,rate,min)=>Math.max(min||20,Math.round(delta/rate));
+
+  /* 大粉量拆段：兩人份不是把一人份的水直接倒兩倍進去。
+     單段注水量過大時，水柱得連續倒四十幾秒，邊緣的粉會整段吃不到水（掛壁）。
+     實務做法是把水切成多個小段，讓粉層一路保持「呼吸」的起伏。
+     小粉量（總水量 ≤ 350g）維持原本的段數不變。                        */
+  const SEG_CAP=150;
+  const splitTargets=(from,to,minSegs)=>{
+    const n = Math.max(minSegs||1, total>350 ? Math.ceil((to-from)/SEG_CAP) : 1);
+    return Array.from({length:n},(_,i)=>from+(to-from)*(i+1)/n);
+  };
 
   const cus=(MX[S.master]||{}).custom;
   if(cus){
@@ -703,7 +785,7 @@ function buildSteps(total,milk,bypass){
     const p3=w60/3;
     push(40,p1,'【第一注·悶蒸】中心向外螺旋','由中心起繞，外圈距濾紙壁約 1 公分折返。氣泡停止大量冒出、稍失光澤＝排氣完成。',true,'B');
     push(5, p1,'等待完全滴完','',false);
-    push(durB(p2,'S',12),p1+p2,'【第二注·調味段】50 元硬幣繞圈',tw>0?'系統已加大此段水量以提升甜感。':tw<0?'系統已調整水量凸顯酸香。':'注水那十幾秒秤上會衝到 6-8 g/s，注完就停手等滴完，這是正常的。',true,'S');
+    push(durB(p2,'S1',12),p1+p2,'【第二注·調味段】50 元硬幣繞圈',(tw>0?`系統已加大此段水量並放慢到 ${frontRate()} g/s 以提升甜感。`:tw<0?`系統已縮小此段水量並加快到 ${frontRate()} g/s 以凸顯酸香。`:'注水那十幾秒秤上會衝到 6-8 g/s，注完就停手等滴完，這是正常的。')+'前 40% 的兩注負責決定酸甜比例，這是 4:6 法真正在調的東西。',true,'S1');
     push(20,p1+p2,'等待完全滴完','',false);
     push(durB(p3,'S',10),p1+p2+p3,'【第三注·調濃度】中大水流','提取 Body，水柱勿沖到邊緣濾紙，否則會產生通道效應。',true,'S');
     push(20,p1+p2+p3,'等待完全滴完','',false);
@@ -711,6 +793,17 @@ function buildSteps(total,milk,bypass){
     push(20,p1+p2+p3*2,'等待完全滴完','',false);
     push(durB(p3,'S',5),total,'【最後一注】中心定點','中心注水避免翻攪邊緣雜質，保持尾段潔淨。',true,'S');
     push(35,total,'等待濾完，準備品嚐','若水流變極細滴漏，可提早移出濾杯避免苦澀。',false);
+  }else if(S.master==='switch46'){
+    /* 前 120/280 用高溫開閥低流速濾過，後段換 70°C 關閥浸泡。
+       前兩注的分配沿用 4:6 的酸甜邏輯：要甜就第二注加大，要酸就第一注加大。 */
+    const front=total*0.43;
+    let f1=front*0.5, f2=front*0.5;
+    if(tw<0){f1=front*0.58;f2=front*0.42;} if(tw>0){f1=front*0.42;f2=front*0.58;}
+    push(30,f1,'【第一注 · 開閥】確認閥門打開，隨意繞圈快速潤濕全部粉層','重點不是繞得漂亮，是讓所有粉「同時」吃到水。有粉晚了 30 秒才濕，它就少萃了 30 秒。閥門開著＝低流速濾過，不是浸泡。',true,'C');
+    push(30,f1+f2,'【第二注 · 維持開閥】繼續低流速繞圈',tw>0?'系統已加大這一注的水量以提升甜感（前兩注的分配就是在調酸甜比例）。':tw<0?'系統已加大第一注、縮小這一注以凸顯酸質。':'前兩注合計約總水量的 43%，等同 4:6 法的「4」。',true,'C');
+    push(15,f1+f2,'【降溫 · 關閥】備好 70°C 的水，等水流得差不多就關閥',`這是整個配方的靈魂：後段改用低溫，讓苦澀根本沒機會被萃出來。上方「兌水精準降溫」可算出 70°C 要怎麼兌。`,false);
+    push(30,total,'【第三注 · 70°C 浸泡】注入剩餘全部水量後靜置','水溫換成 70°C，閥門關著，這一段是浸泡不是濾過。低溫＋浸泡讓後段只補甜感與 Body，不補苦味。',true,'F');
+    push(60,total,'【開閥濾出】約 1 分 45 秒時打開閥門','全程萃取不要超過 3 分鐘。時間到了水還沒流完就直接把濾杯移開，覺得太濃再兌水，別讓它繼續泡。',false);
   }else if(S.master==='hoffmann'){
     push(45,d*3,'悶蒸 + 拿起濾杯搖晃','確保所有細粉濕潤，搖到表面平整。',true,'B');
     push(durB(total*0.6-d*3,'F',16),total*0.6,'主注水（快速大水柱至 60%）','刻意加快，用水流動能打翻底部粉層追求均勻。注水約十幾秒就到量，之後維持水位等待。',true,'F');
@@ -725,18 +818,39 @@ function buildSteps(total,milk,bypass){
     push(50,total,'等待濾完','尾段若出現澀感來源的細流，提早移杯。',false);
   }else if(S.master==='onepour'){
     push(40,d*2,'【悶蒸】中心向外螺旋','外圈距濾紙壁 1 公分折返。氣泡停止大量冒出、稍失光澤＝排氣完成。',true,'B');
-    push(durC(total-d*2,3.2,45),total,'【一刀流】連續繞圈注到底，全程不斷水','由內向外螺旋到距壁 1 公分，再等速收回中心，反覆循環。全程都在出水，所以秤上會穩定顯示 3 g/s 上下 — 比分段注水的瞬間值低是正常的。',true,'C');
+    push(durC(total-d*2,clamp(frontRate()/2,2.4,4.2),45),total,'【一刀流】連續繞圈注到底，全程不斷水',`由內向外螺旋到距壁 1 公分，再等速收回中心，反覆循環。全程都在出水，所以秤上顯示的數字比分段注水的瞬間值低是正常的。目前依風味滑桿設定為${tw>0?'較慢的連續流速，拉長攪拌走甜厚':tw<0?'較快的連續流速，走酸亮清爽':'中性連續流速'}。`,true,'C');
     push(50,total,'等待濾完','總時間約 2:30 到 3:00 滴完最理想。',false);
   }else if(S.master==='threepour'){
+    /* 段數本身就是風味槓桿：段數越多、總接觸時間越長，萃取進程越往後段（甜）推。
+       想增甜時把「第二刀」再切一刀，這是比動水溫更安全的做法。 */
+    const cuts = tw>=1 ? 3 : 2;
     push(35,d*2,'【悶蒸】中心向外螺旋','新鮮豆會隆起成漢堡狀，此時溫柔給水，不可沖破粉層。',true,'B');
     push(15,d*2,'等待完全滴完','',false);
-    push(durB(total*0.6-d*2,'S',18),total*0.6,'【第一刀】由內向外螺旋 · 決定風味主體','繞到距濾紙壁 1 公分折返。注水那十幾秒秤上會到 6-8 g/s，帶動粉層均勻翻滾。',true,'S');
-    push(20,total*0.6,'等待水位下降約三分之一','',false);
-    push(durB(total*0.4,'S',15),total,'【第二刀】縮小範圍，中央小圈 · 決定濃度','刻意縮到中央二分之一區域，避免大水流沖刷邊緣細粉而帶出苦澀。',true,'S');
+    /* 拆出來的小段之間只留短暫的「呼吸」空檔（5 秒），不等它完全滴乾 ——
+       否則兩人份的總時間會被等待段撐到 4 分半，反而過萃。
+       只有每一刀的最後一段才做完整的等待滴落。                        */
+    const seg1=splitTargets(d*2,total*0.6);
+    seg1.forEach((t,i)=>{
+      const last=i===seg1.length-1;
+      push(durB(t-(i?seg1[i-1]:d*2),'S1',last?12:5),t,
+        seg1.length>1?`【第一刀 ${i+1}/${seg1.length}】由內向外螺旋 · 決定風味主體`:'【第一刀】由內向外螺旋 · 決定風味主體',
+        i?'水量大時刻意切成多小段，讓粉層一路保持起伏「呼吸」，邊緣的粉才不會整段吃不到水。'
+         :`繞到距濾紙壁 1 公分折返。這一刀的流速決定酸甜走向：目前設定 ${frontRate()} g/s（${tw>0?'慢注拉長攪拌，走甜厚':tw<0?'大水柱快注，走酸亮清爽':'中性基準'}），水量放小時繞圈的攪拌力道仍要夠。`,
+        true,'S1');
+      if(last)push(15,t,'等待水位下降約三分之一','',false);
+    });
+    const tail = splitTargets(total*0.6,total,cuts-1);
+    tail.forEach((t,i)=>{
+      const prev = i? tail[i-1] : total*0.6;
+      push(durB(t-prev,'S',i===tail.length-1?12:5),t,
+        tail.length>1?`【第二刀 ${i+1}/${tail.length}】縮小範圍，中央小圈 · 決定濃度`:'【第二刀】縮小範圍，中央小圈 · 決定濃度',
+        i===0?'刻意縮到中央二分之一區域，避免大水流沖刷邊緣細粉而帶出苦澀。':'多切一段是為了拉長接觸時間，把萃取推向甜感所在的後段。',
+        true,'S');
+    });
     push(45,total,'等待濾完','若尾段變成極細滴漏，可提早移出濾杯避免苦澀。',false);
   }else if(S.master==='rao'){
     push(45,d*2.5,'【悶蒸】注水後拿起濾杯輕搖 3 到 4 圈','搖杯讓水與粉瞬間完整混合、打散結塊的粉團，表面要平整無未濕潤的粉。',true,'B');
-    push(durB(total-d*2.5,'S',20),total,'【主注水】一次到底，由內向外等速螺旋','不斷水、不分段。Rao 認為分段只會製造溫度波動。',true,'S');
+    push(durB(total-d*2.5,'S1',20),total,'【主注水】一次到底，由內向外等速螺旋',`不斷水、不分段。Rao 認為分段只會製造溫度波動。目前流速 ${frontRate()} g/s。`,true,'S1');
     push(15,total,'【收尾旋轉】水快濾完時，水平輕搖 1 到 2 圈','力道務必輕柔，只要讓微小離心力把黏在濾紙壁上的殘粉沖回中央、鋪平粉床即可。力道過大會讓微粉堵塞底孔。',false);
     push(45,total,'等待濾完','粉層應呈現平坦的圓餅狀。若中間凹陷或邊緣殘留粉牆，代表旋轉不夠。',false);
   }else if(S.master==='clever'){
@@ -784,7 +898,7 @@ function buildSteps(total,milk,bypass){
    設定頁渲染
    ============================================================ */
 function renderBlueprint(){
-  $('outTemp').textContent=P.temp+'°C';
+  $('outTemp').textContent=P.coolTemp?`${P.temp}→${P.coolTemp}°C`:P.temp+'°C';
   $('outWater').textContent=P.total+'g';
   $('outRatio').textContent='1:'+P.ratio;
   $('outGrind').textContent=P.grind;
@@ -793,7 +907,7 @@ function renderBlueprint(){
   $('originHint').textContent=ORIGINS[S.origin].note;
   $('dripperHint').textContent=DRIPPERS[S.dripper].note;
   $('masterHint').textContent=(MX[S.master]||MASTERS.threepour).note;
-  $('tweakMid').textContent=S.tweak===0?'⦿ 平衡':(S.tweak>0?'甜感 +'+S.tweak:'酸香 '+S.tweak);
+  $('tweakMid').textContent=(S.tweak===0?'⦿ 平衡':(S.tweak>0?'甜感 +'+S.tweak:'酸香 '+S.tweak))+` · 前段 ${P.front} g/s`;
   $('latteBox').style.display=S.master==='latte'?'block':'none';
   $('icedBox').style.display=S.master==='iced'?'block':'none';
   $('waterLabel').textContent=P.iced?'熱水注入量 ':(P.bypass?'過粉層水量 ':'總水量 ');
@@ -828,7 +942,8 @@ function renderReco(){
     latte:'🤖 <b>拿鐵基底模式</b>：粉水比已鎖定高濃度，下方會依真實咖啡液量自動算出熱／冰拿鐵的牛奶用量。',
     iced:'🤖 <b>冰咖啡模式</b>：系統已把冰塊視為總水量的一部分並自動拆帳，秤上只需注入計算後的熱水量。',
     matsuya:'🤖 <b>松屋式模式</b>：系統已自動拆出 bypass 兌水量，秤上只需注到「過粉層水量」，剩餘熱水最後直接兌入下壺。',
-    clever:'🤖 <b>浸泡式模式</b>：萃取率由浸泡時間決定，手法幾乎不影響結果。想更濃就延長浸泡，想更清爽就縮短。'};
+    clever:'🤖 <b>浸泡式模式</b>：萃取率由浸泡時間決定，手法幾乎不影響結果。想更濃就延長浸泡，想更清爽就縮短。',
+    switch46:'🤖 <b>雙水溫模式</b>：前段用上方顯示的高溫開閥濾過，後段換 70°C 關閥浸泡。請另外備一壺 70°C 的水（可用下方「兌水精準降溫」計算），全程萃取不超過 3 分鐘。'};
   if((MX[S.master]||{}).custom){
     $('masterReco').innerHTML='🤖 <b>自訂手法模式</b>：時間軸完全依你儲存的段落執行，流速由水量增量自動換算。可在「我的手法」隨時編輯。';
     return;
@@ -837,6 +952,7 @@ function renderReco(){
   let key='threepour',why='悶蒸加兩刀，好記好複製，日常最穩的萬用解。';
   if(S.roast==='ultra-light'&&S.process==='washed'){key='hoffmann';why='極淺焙＋水洗＝Level 1 極難萃取，需要高溫高攪拌。';}
   else if(S.process==='anaerobic'||S.process==='decaf'){key='onepour';why='這類豆極易萃取，一刀流不斷水、不攪拌，乾淨度最高、最不容易翻出雜味。';}
+  else if(S.origin==='africa'&&S.tweak>=1){key='switch46';why='想把非洲豆的尖銳酸修飾掉、又不想犧牲花果香，前段高溫萃香＋後段降溫浸泡是最直接的解（需要有閥門的濾杯）。';}
   else if(S.roast==='dark'){key='osmotic';why='深焙走日系點滴，鎖焦糖甜、杜絕焦苦。';}
   else if(S.roast==='med-dark'){key='matsuya';why='中深焙用松屋式只取精華前段再兌水，甜感濃郁且毫無澀味。';}
   else if(S.dose>=28){key='clever';why='大粉量厚粉層最怕流速失控，浸泡式把變數交給時間，容錯率最高。';}
@@ -1000,6 +1116,8 @@ $('resetBtn').onclick=()=>{
   try{TTS()&&TTS().cancel();}catch(e){}
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
   $('finishBox').style.display='none';
+  brewSecs=0;verdict='';
+  [...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
   loop();
 };
 $('goBrew').onclick=()=>{calc();$('setupPage').style.display='none';$('brewPage').style.display='block';$('resetBtn').onclick();window.scrollTo(0,0);};
@@ -1009,6 +1127,9 @@ function finishBrew(){
   running=false;clearInterval(tick);
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
   $('finishBox').style.display='block';
+  /* 記下實際跑完的總秒數 —— 這是校準研磨度唯一可靠的客觀數字 */
+  brewSecs=Math.round(elapsed())||P.plan;
+  $('secsChip').textContent=fmt(brewSecs);
   speak('沖煮完成，請移開濾杯，搖晃咖啡液後品嚐');buzz([200,100,200,100,400]);beep(990,0.4);
   releaseWake();
 }
@@ -1169,7 +1290,7 @@ $('tglWake').onclick=async e=>{
    ============================================================ */
 const LOG_KEY='pourmaster_logs_v1';
 const SET_KEY='pourmaster_setting_v1';
-let rating=0;
+let rating=0, verdict='', brewSecs=0;
 
 /* 上一次的設定：每次運算後自動寫回，下次開啟直接沿用 */
 function snapshot(){
@@ -1195,6 +1316,43 @@ function loadSettings(){
   try{return applySettings(JSON.parse(localStorage.getItem(SET_KEY)),true);}catch(e){return false;}
 }
 
+const VERDICT_TXT={sour:'偏酸',good:'剛好',bitter:'偏苦'};
+
+/* ============================================================
+   研磨度校準迴圈
+   ── 專業咖啡師調一支新豆的實際流程就是這個：先用砂糖粗細沖一杯基準，
+      看「總萃取時間」判斷流速對不對，再依照喝起來偏酸還偏苦決定往細或往粗調，
+      一次只動一格、一次只動一個變數。這需要的兩個數字（實際總時間、風味偏向）
+      過去沒有被記錄下來，所以日誌只能「重現」而無法「進步」。
+   ── 時間門檻依總水量縮放：兩人份本來就該比一人份慢，不能用同一個絕對值判斷。
+   ============================================================ */
+function calibrate(l){
+  if(!l||!l.verdict)return null;
+  const plan=l.plan||0, secs=l.secs||0;
+  const slow = plan && secs > plan+40;    // 比藍圖慢很多 → 流速偏慢
+  const fast = plan && secs < plan-40;    // 比藍圖快很多 → 流速偏快
+  if(l.verdict==='sour'){
+    return fast
+      ? {t:'流速太快，水還沒把東西帶出來就走了',b:'研磨調細一格。這是萃取不足最直接的解，先只動這一項。'}
+      : {t:'萃取停在前段',b:'依序試：① 研磨調細一格 ② 把注水段數加一段（拉長接觸時間）③ 風味滑桿往「甜／醇厚」推一格。一次只動一項，才知道是誰的功勞。'};
+  }
+  if(l.verdict==='bitter'){
+    return slow
+      ? {t:'流速太慢，泡太久了',b:'研磨調粗一格，並且尾段變成細滴漏時就提早把濾杯移開，別等它滴完。'}
+      : {t:'萃取推過頭了',b:'依序試：① 研磨調粗一格 ② 減少注水段數或縮小繞圈範圍 ③ 風味滑桿往「果酸」推一格。細粉過多也會苦，磨豆機記得先推殘粉。'};
+  }
+  return slow
+    ? {t:'味道對了，但流速偏慢',b:'風味沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。'}
+    : {t:'這組參數是對的，記下來',b:'想再往上挑戰的話：研磨再細半格試試看能不能萃出更多甜感與厚實度，但只要開始出現苦味就退回這一格。這一格就是這支豆子的答案。'};
+}
+function renderCalibration(){
+  const box=$('calibBox');if(!box)return;
+  const c=calibrate(loadLogs()[0]);
+  if(!c){box.style.display='none';return;}
+  box.style.display='block';
+  box.innerHTML=`🎯 <b>依上一杯校準</b>：${c.t}。<br>${c.b}`;
+}
+
 function loadLogs(){try{return JSON.parse(localStorage.getItem(LOG_KEY))||[];}catch(e){return[];}}
 function writeLogs(logs){
   try{localStorage.setItem(LOG_KEY,JSON.stringify(logs.slice(0,50)));renderLogs();return true;}
@@ -1212,7 +1370,7 @@ function renderLogs(){
         <span class="log-name">${logTitle(l)}</span>
         <span class="log-star">${'★'.repeat(l.rating)||'—'}</span>
       </div>
-      <div class="log-meta">${l.date} ｜ ${esc(l.roast)}·${esc(l.master)} ｜ ${l.temp}°C / ${l.total}g</div>
+      <div class="log-meta">${l.date} ｜ ${esc(l.roast)}·${esc(l.master)} ｜ ${l.temp}°C / ${l.total}g${l.secs?` ｜ ${fmt(l.secs)}`:''}${VERDICT_TXT[l.verdict]?` ｜ ${VERDICT_TXT[l.verdict]}`:''}</div>
       <div class="log-acts">
         ${l.cfg?`<button class="btn-mini recall" data-i="${i}">重現</button>`:''}
         <button class="btn-mini rename" data-i="${i}">改名</button>
@@ -1224,6 +1382,7 @@ function renderLogs(){
     ? `上次沖煮：<b>${logTitle(last)}</b>　${last.date}　${last.temp}°C / ${last.total}g ${'★'.repeat(last.rating)}
        ${last.cfg?'<button class="btn-mini recall" data-i="0" style="margin-left:6px">一鍵沿用</button>':''}`
     : '尚無沖煮紀錄。完成第一杯後，這裡會顯示上次的參數並可一鍵沿用。';
+  renderCalibration();
 }
 
 /* 事件委派：重現 / 改名 / 刪除 */
@@ -1250,15 +1409,36 @@ $('stars').addEventListener('click',e=>{
   const v=+e.target.dataset.v;if(!v)return;rating=v;
   [...$('stars').children].forEach((s,i)=>s.classList.toggle('lit',i<v));
 });
+/* 這杯偏酸還偏苦：下一杯的校準建議完全建立在這個回饋上 */
+$('verdictRow').addEventListener('click',e=>{
+  const v=e.target.dataset.v;if(!v)return;verdict=v;
+  [...$('verdictRow').children].forEach(c=>c.classList.toggle('on',c.dataset.v===v));
+});
+/* 計時器只到「最後一段結束」，實際滴完常常晚幾十秒，所以留一個手動修正 */
+$('secsEdit').onclick=()=>{
+  const cur=fmt(brewSecs||0);
+  const inp=prompt('實際滴完的總時間（格式 mm:ss 或純秒數）',cur);
+  if(inp===null)return;
+  const m=String(inp).trim().match(/^(\d+):(\d{1,2})$/);
+  const s=m?(+m[1])*60+(+m[2]):parseInt(inp,10);
+  if(!isFinite(s)||s<=0||s>1800){toast('時間格式看不懂，請輸入如 3:10');return;}
+  brewSecs=s;$('secsChip').textContent=fmt(brewSecs);
+};
 $('saveLog').onclick=()=>{
   const logs=loadLogs();
   const nm=($('brewName').value||'').trim().slice(0,24);
   const entry={date:new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
     roast:ROASTS[S.roast].name,master:(MX[S.master]||MASTERS.threepour).name.split('（')[0],
-    temp:P.temp,total:P.total,rating,cfg:snapshot()};
+    temp:P.temp,total:P.total,rating,cfg:snapshot(),
+    /* 校準迴圈需要的三個欄位：實際總時間、預估總時間、這杯偏哪一邊 */
+    secs:brewSecs||0, plan:P.plan||0, verdict, ratio:P.ratio, grind:P.grind};
   if(nm)entry.name=nm;
   logs.unshift(entry);
-  if(writeLogs(logs)){$('brewName').value='';toast('已儲存至沖煮日誌');}
+  if(writeLogs(logs)){
+    $('brewName').value='';
+    verdict='';[...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
+    toast(entry.verdict?'已儲存，下次開啟會給你校準建議':'已儲存至沖煮日誌');
+  }
 };
 
 /* ============================================================
