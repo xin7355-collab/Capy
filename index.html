@@ -293,6 +293,16 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <label style="margin-top:16px">風味校正器（酸香 ↔ 甜感）</label>
     <input type="range" id="tweak" min="-2" max="2" step="1" value="0">
     <div class="tweak-labels"><span class="lo">← 更亮 / 果酸</span><span id="tweakMid">平衡</span><span class="hi">更甜 / 醇厚 →</span></div>
+
+    <div id="ratioLockBox">
+      <label style="margin-top:16px">粉水比 <b>· 留空＝依引擎自動運算</b></label>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-family:var(--mono);color:var(--crema);font-weight:800;font-size:1.05rem;flex-shrink:0">1 :</span>
+        <input type="number" id="ratioLock" step="0.5" min="8" max="20" placeholder="自動" inputmode="decimal" style="flex:1">
+        <button class="btn-mini" id="ratioAuto" style="flex-shrink:0">回到自動</button>
+      </div>
+      <div class="hint" id="ratioHint"></div>
+    </div>
   </div>
 
   <!-- 3b. 自訂手法 -->
@@ -598,7 +608,7 @@ function fillSelect(sel,db){
 /* ============================================================
    核心運算引擎
    ============================================================ */
-const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0 };
+const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null };
 let P = null; // 最新運算結果
 
 function calc(){
@@ -641,11 +651,19 @@ function calc(){
   //    三個槓桿有一個在互扯。現改為 甜→加水、酸→減水，讓三者一致往同方向推。
   //    上限 1:18 是稀薄臨界，超過就只是變淡而不是變甜，故於 warns 攔截。
   //    ──────────────────────────────────────────────────────
+  /* 手法自帶濃度控制時（自訂手法固定值、拿鐵基底的專屬濃度選單），
+     手動覆寫會被忽略，此時把覆寫欄位收起來，避免出現「設了卻沒作用」的鬼打牆。 */
+  const ratioOwned = !!(mst.ratioFixed || mst.ratio);
   let ratio;
   if(mst.ratioFixed){ratio=clamp(mst.ratioFixed,5,20);logs.push(`自訂手法固定粉水比 1:${ratio}`);}
   else if(mst.ratio){
     ratio=+($('latteStrength')?$('latteStrength').value:mst.ratio);
     logs.push(`高濃度基底鎖定 1:${ratio}`);
+  }
+  else if(S.ratioOverride){
+    /* 手動鎖定：只接管水量這一項，風味校正器仍作用於水溫、研磨與注水節奏 */
+    ratio=clamp(S.ratioOverride,8,20);
+    logs.push(`手動鎖定粉水比 1:${ratio}`);
   }
   else{
     ratio=clamp(+(base.baseRatio + drp.ratioMod + (mst.ratioMod||0) + S.tweak*0.5).toFixed(1),9,18);
@@ -698,6 +716,8 @@ function calc(){
     warns.push('此手法必須用「有閥門」的濾杯（Hario Switch、聰明濾杯）才做得出後段浸泡。手邊只有 V60 或蛋糕濾杯的話，請改選其他手法。');
   if(ratio>=17.5)
     warns.push(`粉水比已達 1:${ratio}，再加水只會變稀薄而不會更甜。想再往甜感推，請改用研磨調細或增加注水段數。`);
+  if(S.ratioOverride&&(ratio<10||ratio>18))
+    warns.push(`1:${ratio} 已超出引擎建議的 1:10～1:18 區間。${ratio<10?'極濃時流速會明顯變慢，秤到目標水量就立刻移開濾杯，尾段的乾澀不要留。':'水量偏多容易讓濃度不足，若覺得太淡請把粉量一起往上加。'}`);
   if(S.dose>=26&&(S.roast==='dark'||S.roast==='med-dark'))
     warns.push(`中深焙做兩人份時，粉量不要直接把一人份翻倍 —— 深焙溶出率高，翻倍容易過萃而乾苦。建議減 1 到 2 克（約 ${Math.max(8,S.dose-2)}g）並把研磨再調粗一點點。`);
 
@@ -716,7 +736,7 @@ function calc(){
   logs.push(`前段流速 ${frontRate()} g/s（${S.tweak>0?'放慢拉長攪拌走甜厚':S.tweak<0?'加快大水柱走酸亮':'中性基準'}）`);
 
   P={temp,ratio,total,grind,steps,logs,milk,iced,bypass,warns,flowNote:proc.flow,
-     front:frontRate(),coolTemp:mst.coolTo||null,plan:steps.length?steps[steps.length-1].end:0};
+     front:frontRate(),coolTemp:mst.coolTo||null,plan:steps.length?steps[steps.length-1].end:0,ratioOwned};
   renderBlueprint();
   saveSettings();
 }
@@ -908,6 +928,10 @@ function renderBlueprint(){
   $('dripperHint').textContent=DRIPPERS[S.dripper].note;
   $('masterHint').textContent=(MX[S.master]||MASTERS.threepour).note;
   $('tweakMid').textContent=(S.tweak===0?'⦿ 平衡':(S.tweak>0?'甜感 +'+S.tweak:'酸香 '+S.tweak))+` · 前段 ${P.front} g/s`;
+  $('ratioLockBox').style.display=P.ratioOwned?'none':'block';
+  $('ratioHint').innerHTML = S.ratioOverride
+    ? `已鎖定 <em>1:${P.ratio}</em>，${S.dose}g 粉 → <em>${P.total}g</em> 水。風味校正器仍然作用於水溫、研磨與注水節奏，只是不再改變水量。`
+    : `留空時由引擎依烘焙度、濾杯與風味校正器運算。常見安全區間是 1:15～1:18；想要濃一點可往 1:12 到 1:14 走，${ROASTS[S.roast].name}的基準是 1:${ROASTS[S.roast].baseRatio}。`;
   $('latteBox').style.display=S.master==='latte'?'block':'none';
   $('icedBox').style.display=S.master==='iced'?'block':'none';
   $('waterLabel').textContent=P.iced?'熱水注入量 ':(P.bypass?'過粉層水量 ':'總水量 ');
@@ -1299,9 +1323,10 @@ function snapshot(){
 function saveSettings(){try{localStorage.setItem(SET_KEY,JSON.stringify(snapshot()));}catch(e){}}
 function applySettings(d,silent){
   if(!d)return false;
-  ['dose','roast','process','origin','dripper','master','tweak'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k];});
+  ['dose','roast','process','origin','dripper','master','tweak','ratioOverride'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k];});
   S.dose=clamp(+S.dose||20,8,40);S.tweak=clamp(+S.tweak||0,-2,2);
-  $('dose').value=S.dose;$('tweak').value=S.tweak;
+  S.ratioOverride = S.ratioOverride ? clamp(+S.ratioOverride,8,20) : null;
+  $('dose').value=S.dose;$('tweak').value=S.tweak;$('ratioLock').value=S.ratioOverride??'';
   if(S.master.startsWith('c:')&&!MX[S.master])S.master='threepour';  // 自訂手法已被刪除
   ['roast','process','origin','dripper','master'].forEach(k=>{if($(k).querySelector(`option[value="${S[k]}"]`))$(k).value=S[k];else S[k]=$(k).value;});
   if(d.latteStrength)$('latteStrength').value=d.latteStrength;
@@ -1469,6 +1494,26 @@ $('dose').addEventListener('input',()=>{S.dose=clamp(+$('dose').value||20,8,40);
   calc();
 }));
 $('tweak').addEventListener('input',()=>{S.tweak=+$('tweak').value;calc();});
+/* 粉水比手動鎖定：欄位留空即回到引擎自動運算 */
+$('ratioLock').addEventListener('input',()=>{
+  const raw=$('ratioLock').value.trim(), v=parseFloat(raw);
+  if(raw===''){S.ratioOverride=null;calc();return;}
+  /* 打字打到一半（"1" 還沒變成 "15"）先不要套用，否則畫面會先跳到下限再彈回去 */
+  if(!isFinite(v)||v<8||v>20)return;
+  S.ratioOverride=v;calc();
+});
+$('ratioLock').addEventListener('change',()=>{
+  const raw=$('ratioLock').value.trim(), v=parseFloat(raw);
+  if(raw===''){S.ratioOverride=null;calc();return;}
+  if(!isFinite(v)){$('ratioLock').value=S.ratioOverride??'';return;}
+  S.ratioOverride=clamp(v,8,20);
+  $('ratioLock').value=S.ratioOverride;   // 超出範圍時把修正後的值寫回欄位
+  calc();
+});
+$('ratioAuto').onclick=()=>{
+  if(S.ratioOverride===null){toast('目前已經是自動運算');return;}
+  S.ratioOverride=null;$('ratioLock').value='';calc();toast('粉水比已回到自動運算');
+};
 ['roomT','kettleW'].forEach(k=>$(k).addEventListener('input',renderMix));
 ['latteStrength','milkRatio','icePct'].forEach(k=>$(k).addEventListener('change',calc));
 
