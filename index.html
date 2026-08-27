@@ -151,6 +151,13 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .seg .t{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
 .seg .g{font-family:var(--mono);font-weight:800;font-size:.95rem;margin:2px 0}
 .seg .a{font-size:.64rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg .f{font-family:var(--mono);font-size:.62rem;color:var(--water);margin-top:3px}
+
+/* 下一段預告：讓流速在需要用到之前就先讀得到，不用等段落開始才臨時看 */
+.nextline{display:flex;align-items:center;gap:10px;background:rgba(216,155,90,.06);border:1px dashed rgba(216,155,90,.32);border-radius:12px;padding:9px 13px;margin-top:8px}
+.nextline .lbl{font-size:.62rem;font-weight:700;color:var(--crema);letter-spacing:.08em;flex-shrink:0}
+.nextline .body{font-size:.72rem;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nextline .nf{font-family:var(--mono);font-size:.92rem;font-weight:800;color:var(--water);flex-shrink:0}
 
 /* 完成 & 日誌 */
 .finish{display:none;background:rgba(143,191,127,.08);border:1px solid rgba(143,191,127,.4);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
@@ -474,6 +481,11 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <div class="act" id="actText">按下開始，跟著指針倒水</div>
     </div>
     <div class="flowline"><span style="font-size:.78rem;color:var(--muted)">建議流速</span><span class="fv" id="flowText">--</span></div>
+    <div class="nextline" id="nextLine">
+      <span class="lbl">下一段</span>
+      <span class="body" id="nextText">—</span>
+      <span class="nf" id="nextFlow"></span>
+    </div>
     <div class="tip" id="tipBox" style="display:none"><span id="tipText"></span></div>
 
     <div class="ctrl">
@@ -1028,15 +1040,32 @@ function liveTarget(t,i){
 }
 
 /* 產生該段的語音摘要：注水段報「注到 X 克，流速…」；非注水段報等待秒數 */
-function stepBrief(i){
+/* 段落標題的口語版：去掉【】與「·」後面的補充說明，只留動作本身。
+   細節畫面上都看得到，用唸的反而會讓一句話塞太多字。 */
+function stepShort(action){
+  return String(action||'').replace(/【|】/g,' ').split(/\s*[·・]\s*/)[0].trim();
+}
+
+/* 語音拆句：一句一件事，各自成為獨立的 utterance，
+   讓合成器在句與句之間自然停頓，而不是把目標水量和流速黏成一長串。 */
+function stepLines(i){
   const s=P.steps[i], prev=i>0?P.steps[i-1].target:0, dur=Math.round(s.end-s.start);
+  const out=[];
   if(s.pour&&s.target>prev){
-    const add=s.target-prev;
-    let txt=`注到 ${s.target} 克，這段加 ${add} 克`;
-    if(s.flow&&s.flow!=='—')txt+=`，流速 ${s.flow}`;
-    return txt;
+    out.push(`注到 ${s.target} 克。`);
+    out.push(`這段加 ${s.target-prev} 克。`);
+    if(s.flow&&s.flow!=='—')out.push(`流速 ${s.flow}。`);
+  }else{
+    out.push(`維持 ${dur} 秒。`);
   }
-  return `維持 ${dur} 秒`;
+  return out;
+}
+
+/* 依序播報：第一句可打斷前一段的殘句，其餘接續排隊 */
+function announce(lead,i){
+  const head=[lead,stepShort(P.steps[i].action)].filter(Boolean).join('，')+'。';
+  speak(head);
+  stepLines(i).forEach(l=>speak(l,true));
 }
 
 function loop(){
@@ -1054,19 +1083,18 @@ function loop(){
     $('tipText').textContent=s.tip;
     $('stepGoal').textContent='本段目標 '+s.target+' g';
     if(running){
-      speak(s.action);
-      speak(stepBrief(i),true);          // 接續播報：目標水量＋流速
+      announce('',i);
       buzz([80,60,80]);beep(s.pour?880:520);
     }
     renderStrip(i,t);
   }
-  // 段末 8 秒預告下一段要做什麼
-  if(running&&!announced5&&i<P.steps.length-1&&s.end-t<=8){
+  // 段末 10 秒先報下一段：流速要在需要用到之前就聽得到，不是同時
+  if(running&&!announced5&&i<P.steps.length-1&&s.end-t<=10){
     announced5=true;
-    const nx=P.steps[i+1];
-    speak('準備，'+nx.action+'，'+stepBrief(i+1));
+    announce('準備',i+1);
     beep(660,0.08);
   }
+  renderNext(i,t);
 
   // 節拍器
   const lv=liveTarget(t,i);
@@ -1078,11 +1106,29 @@ function loop(){
   if(done&&running){finishBrew();}
 }
 
+/* 下一段預告：整段沖煮過程中都看得到下一步要注到幾克、用什麼流速、還有幾秒開始。
+   這樣按下開始的當下不必臨時找數字，倒數期間也已經先讀過一次。 */
+function renderNext(i,t){
+  const nx=P.steps[i+1];
+  if(!nx){
+    $('nextText').textContent='最後一段，滴完就可以移開濾杯';
+    $('nextFlow').textContent='';
+    return;
+  }
+  const inSec=Math.max(0,Math.ceil(nx.start-t));
+  const prev=P.steps[i].target;
+  const detail = nx.pour&&nx.target>prev ? `到 ${nx.target}g` : `維持 ${Math.round(nx.end-nx.start)} 秒`;
+  /* 數字排在動作名之前：一行放不下時被省略號吃掉的是名稱，不是要照著倒的水量 */
+  $('nextText').textContent=`${inSec} 秒後 · ${detail} · ${stepShort(nx.action)}`;
+  $('nextFlow').textContent=nx.flow&&nx.flow!=='—'?nx.flow:'';
+}
+
 function renderStrip(cur,t){
   $('strip').innerHTML=P.steps.filter(s=>s.pour||/濾乾|品嚐|完成|取下/.test(s.action)).map(s=>{
     const idx=P.steps.indexOf(s);
     const cls=idx===cur?'now':(t>=s.end?'past':'');
-    return `<div class="seg ${cls}"><div class="t">${fmt(s.start)}</div><div class="g">${s.target}g</div><div class="a">${s.action.replace(/【.*?】/,'')}</div></div>`;
+    const flow=s.pour&&s.flow&&s.flow!=='—'?`<div class="f">${s.flow}</div>`:'';
+    return `<div class="seg ${cls}"><div class="t">${fmt(s.start)}</div><div class="g">${s.target}g</div><div class="a">${s.action.replace(/【.*?】/,'')}</div>${flow}</div>`;
   }).join('');
 }
 
@@ -1097,25 +1143,28 @@ function startTimer(){
   loop();
 }
 
-/* 開始前 3 秒倒數：讓你有時間把手伸到手沖壺上 */
+/* 起跑倒數：拉長到 5 秒，並且把第一段的目標與流速在倒數期間就先唸完，
+   而不是等碼錶歸零才跟「開始」一起講 —— 那等於要人邊聽邊倒水。
+   倒數期間不唸數字，把這幾秒完整留給那段說明，節奏交給嗶聲。 */
+const CD_SECS=5;
 function countdown(done){
-  let n=3;
+  let n=CD_SECS;
   $('playBtn').textContent='準備';$('playBtn').disabled=true;
   $('ring').style.stroke='var(--water)';
   const show=()=>{
     $('liveG').innerHTML=n+'<small></small>';
-    $('stepGoal').textContent='即將開始';
-    $('ring').style.strokeDashoffset=RING_LEN*(1-n/3);
+    $('stepGoal').textContent=`即將開始 · 首段目標 ${P.steps[0].target} g`;
+    $('ring').style.strokeDashoffset=RING_LEN*(1-n/CD_SECS);
   };
-  show();speak(String(n));beep(620,0.12);buzz(60);
+  show();beep(620,0.12);buzz(60);
+  announce('準備',0);
   cdTimer=setInterval(()=>{
     n--;
-    if(n>0){show();speak(String(n));beep(620,0.12);buzz(60);return;}
+    if(n>0){show();beep(620,0.12);buzz(60);return;}
     clearInterval(cdTimer);cdTimer=null;
     $('playBtn').disabled=false;
     beep(980,0.3);buzz([120,60,120]);
-    const s0=P.steps[0];
-    speak('開始，'+s0.action);speak(stepBrief(0),true);
+    speak('開始',true);   // 排隊而非打斷，避免把還沒唸完的說明切掉
     done();
   },1000);
 }
@@ -1168,6 +1217,7 @@ function TTS(){try{return (typeof speechSynthesis!=='undefined'&&speechSynthesis
 /* ---- 語音唸讀正規化：把符號與英文轉成 TTS 唸得順的中文 ---- */
 const SPEAK_MAP=[
   [/【|】/g,'，'],
+  [/\s(\d+)\s*\/\s*(\d+)(?=\s|$|，)/g,'，第 $1 段，'],   // 「第一刀 2/2」→「第一刀，第 2 段」，別唸成「二斜線二」
   // 破音字修正：TTS 常把「乾」唸成 qián（聽起來像「敢」），改用不會唸錯的同義詞
   [/滴乾/g,'滴完'],[/濾乾/g,'濾完'],[/瀝乾/g,'瀝出'],[/烘乾/g,'烘到全乾'],
   [/乾淨/g,'潔淨'],[/乾粉團/g,'結塊的粉團'],[/乾粉/g,'未濕潤的粉'],[/乾燥/g,'不含水氣'],[/乾澀/g,'澀感'],
@@ -1254,7 +1304,7 @@ function speak(txt,queue){
     if(!queue)TTS().cancel();
     const u=new SpeechSynthesisUtterance(sayable(txt));
     u.lang='zh-TW'; if(zhVoice)u.voice=zhVoice;
-    u.rate=0.98; u.pitch=1.0;
+    u.rate=0.9; u.pitch=1.0;   // 略慢於預設，配合拆句讓每個數字聽得清楚
     TTS().speak(u);
   }catch(e){/* 靜默降級 */}
 }
