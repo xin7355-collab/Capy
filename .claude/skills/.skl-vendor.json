@@ -1,0 +1,31 @@
+{
+  "skills": [
+    "accessibility",
+    "app-guardrails-audit",
+    "apple-hig-expert",
+    "browser-qa",
+    "changelog-generator",
+    "e2e-testing",
+    "focused-fix",
+    "github-ops",
+    "make-interfaces-feel-better",
+    "minimalist",
+    "verification-before-completion"
+  ],
+  "source_repo": "https://github.com/xin7355-collab/skl",
+  "source_commit": "a7d368b",
+  "updated_at": "2026-10-11T08:52:26Z",
+  "packs": [],
+  "extra_skills": [
+    "ecc/skills/accessibility",
+    "ecc/skills/browser-qa",
+    "ecc/skills/e2e-testing",
+    "ecc/skills/github-ops",
+    "ecc/skills/make-interfaces-feel-better",
+    "engineering/minimalist",
+    "engineering/skills/changelog-generator",
+    "engineering/skills/focused-fix",
+    "product-team/apple-hig-expert/skills/apple-hig-expert",
+    "superpowers/skills/verification-before-completion"
+  ]
+}
