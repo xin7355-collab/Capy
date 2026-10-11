@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="DRIP MATRIX">
 <meta name="description" content="手沖咖啡萃取運算引擎：熱力補償、溶解率矩陣、濾杯幾何與注水節拍導航。">
+<meta name="robots" content="noindex, nofollow">
 <title>DRIP MATRIX — Intelligent Pour-Over Engine</title>
 <style>
 /* ============================================================
@@ -40,7 +41,7 @@ body{
   min-height:100dvh;line-height:1.5;
   background-image:radial-gradient(ellipse 90% 40% at 50% -5%,rgba(216,155,90,.08),transparent);
 }
-.wrap{max-width:520px;margin:0 auto;padding:16px 16px 120px}
+.wrap{max-width:520px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top)) 16px 120px}
 /* Logo 置於品牌名左側，垂直跨越「主名 + 副標」兩行 */
 header{display:flex;align-items:center;justify-content:center;gap:14px;padding:22px 0 10px}
 header .logo{width:58px;height:58px;flex-shrink:0;color:var(--crema)}
@@ -51,9 +52,16 @@ header .brand{text-align:left}
 header h1{font-size:1.62rem;letter-spacing:.1em;color:var(--crema);font-weight:900;line-height:1.05}
 header p{color:var(--muted);font-family:var(--mono);font-size:.6rem;font-weight:600;letter-spacing:.16em;margin-top:5px}
 @media (max-width:360px){header .logo{width:48px;height:48px}header h1{font-size:1.35rem}header p{font-size:.53rem;letter-spacing:.1em}}
+/* 首頁頂列：logo、名稱與設定鈕擠成一列，省下約 35px 還給內容 */
+header.topbar{padding:10px 0 6px;gap:10px}
+header.topbar .brandrow{display:flex;align-items:center;gap:10px;min-width:0}
+header.topbar .logo{width:34px;height:34px}
+header.topbar h1{font-size:1.05rem;letter-spacing:.08em}
+header.topbar p{display:none}
+#goSettings{min-width:44px;min-height:44px;font-size:1.15rem;line-height:1}
 
 /* ---- 卡片 ---- */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:12px}
 .card h2{font-size:.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .card h2 .no{font-family:var(--mono);font-size:.7rem;color:var(--bg);background:var(--crema);border-radius:6px;padding:2px 7px;font-weight:700}
 label{display:block;font-size:.72rem;color:var(--muted);margin:12px 0 5px}
@@ -281,73 +289,94 @@ ul.kb li b{color:var(--text);font-weight:600}
 details summary::before{content:"▸ "}details[open] summary::before{content:"▾ "}
 .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--crema);color:var(--crema);padding:10px 18px;border-radius:99px;font-size:.8rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:99}
 .toast.show{opacity:1}
+
+/* ---- 分頁列：重用 .chips/.chip，只是把膠囊改成等寬分段 ---- */
+.chips.tabs{gap:6px;margin:14px 0 0}
+/* <button> 不繼承 font-family，漏掉 font:inherit 會跳成系統控制項的字體 */
+.chips.tabs .chip{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;
+  font:inherit;font-size:.82rem;font-weight:700;border-radius:12px;padding:6px 4px;line-height:1.2}
+
+/* ---- 長說明預設夾成兩行，點一下展開 ---- */
+.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;
+  position:relative;padding:5px 0 6px;cursor:pointer}
+.clamp.open{display:block;overflow:visible}
+/* ::after 必須絕對定位：在 -webkit-box 裡它算最後一段行內內容，會跟著被裁掉而看不見 */
+.clamp.more::after{content:"更多 \25BE";position:absolute;right:0;bottom:6px;padding-left:18px;
+  color:var(--crema);font-weight:700;background:linear-gradient(90deg,transparent,var(--clampbg,var(--panel)) 18px)}
+.clamp.open.more::after{content:"收合 \25B4";position:static;display:block;background:none;padding:0;margin-top:3px}
+
+/* ---- 設定頁 ---- */
+#settingsPage{padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+.setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0}
+.setrow+.setrow{border-top:1px solid var(--line)}
+.setrow .sl{font-size:.85rem;font-weight:700}
+.setrow .sd{font-size:.68rem;color:var(--muted);margin-top:2px;line-height:1.5}
+.setrow .tgl{min-width:54px;min-height:40px;font-size:1.05rem;flex-shrink:0}
+/* 空的資訊框不要留下一個空殼 */
+.reco:empty{display:none}
+.reco.clamp{--clampbg:#242220}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 
-<!-- ==================== 設定頁 ==================== -->
+<!-- ==================== 首頁：沖煮設定 ==================== -->
 <div id="setupPage" class="wrap">
-  <header>
-    <svg class="logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="DRIP MATRIX">
-      <!-- 科技感外環 -->
-      <circle class="ring" cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
-      <!-- 濾杯幾何主體 (V60) -->
-      <polygon points="15,30 85,30 50,90" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-      <line class="rib" x1="25" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <line class="rib" x1="75" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      <!-- 萃取水滴 -->
-      <path d="M50,15 Q62,35 50,55 Q38,35 50,15" fill="currentColor"/>
-      <!-- 數據節點 -->
-      <circle cx="15" cy="30" r="4" fill="var(--crema)"/>
-      <circle cx="85" cy="30" r="4" fill="var(--crema)"/>
-      <circle cx="50" cy="90" r="4" fill="var(--water)"/>
-    </svg>
-    <div class="brand">
-      <h1>DRIP MATRIX</h1>
-      <p>INTELLIGENT POUR-OVER ENGINE</p>
+  <header class="topbar">
+    <div class="brandrow">
+      <svg class="logo" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle class="ring" cx="50" cy="50" r="46" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+        <polygon points="15,30 85,30 50,90" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <line class="rib" x1="25" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <line class="rib" x1="75" y1="30" x2="50" y2="90" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M50,15 Q62,35 50,55 Q38,35 50,15" fill="currentColor"/>
+        <circle cx="15" cy="30" r="4" fill="var(--crema)"/>
+        <circle cx="85" cy="30" r="4" fill="var(--crema)"/>
+        <circle cx="50" cy="90" r="4" fill="var(--water)"/>
+      </svg>
+      <div class="brand">
+        <h1>DRIP MATRIX</h1>
+        <p>INTELLIGENT POUR-OVER ENGINE</p>
+      </div>
     </div>
+    <button class="tgl" id="goSettings" aria-label="設定與紀錄">⚙</button>
   </header>
 
-  <!-- 1. 咖啡豆 -->
-  <div class="card">
-    <h2><span class="no">01</span>咖啡豆與物理變數</h2>
-    <div class="row2">
-      <div>
-        <label>粉量 (g) <b>· 觸發熱力補償</b></label>
-        <input type="number" id="dose" value="20" min="8" max="40" inputmode="decimal">
-      </div>
-      <div>
-        <label>烘焙度（基礎溶解率）</label>
-        <select id="roast"></select>
-      </div>
+  <!-- 運算藍圖：三個分頁共同的輸出，放在分頁列上方，切到哪一頁都看得見 -->
+  <div class="card blueprint">
+    <div class="stats">
+      <div class="stat"><div class="k">目標水溫</div><div class="v temp" id="outTemp">--</div></div>
+      <div class="stat"><div class="k"><span id="waterLabel">總水量 </span><span id="outRatio"></span></div><div class="v water" id="outWater">--</div></div>
+      <div class="stat"><div class="k">研磨度</div><div class="v grind" id="outGrind">--</div></div>
     </div>
+    <div id="warnBox"></div>
+    <div class="reco" id="bypassBox" style="display:none"></div>
+    <div class="reco" id="icedBox2" style="display:none"></div>
+    <div class="reco" id="milkBox" style="display:none"></div>
+    <details style="margin-top:10px">
+      <summary>運算軌跡與參數依據</summary>
+      <div class="calc-log" id="calcLog" style="margin-top:8px"></div>
+    </details>
+  </div>
+
+  <!-- 分頁依「多久調一次」分：平常沖咖啡只會停在第一頁 -->
+  <div class="chips tabs" role="tablist" aria-label="沖煮參數分類">
+    <button class="chip on" id="tabCup"  role="tab" aria-selected="true"  aria-controls="paneCup">這杯</button>
+    <button class="chip"    id="tabBean" role="tab" aria-selected="false" aria-controls="paneBean" tabindex="-1">這包豆</button>
+    <button class="chip"    id="tabGear" role="tab" aria-selected="false" aria-controls="paneGear" tabindex="-1">器材</button>
+  </div>
+
+  <div id="paneCup" role="tabpanel" aria-labelledby="tabCup">
+  <div class="card">
+    <h2><span class="no">⚖</span>粉量與手法</h2>
+    <label>粉量 (g) <b>· 觸發熱力補償</b></label>
+    <input type="number" id="dose" value="20" min="8" max="40" inputmode="decimal">
     <div class="chips" id="doseChips"></div>
 
-    <label>處理法（細胞壁完整度 → 溶解率修正）</label>
-    <select id="process"></select>
-    <div class="hint" id="processHint"></div>
-
-    <label>產區風味（預期風味 → 水溫微調）</label>
-    <select id="origin"></select>
-    <div class="hint" id="originHint"></div>
-  </div>
-
-  <!-- 2. 濾杯 -->
-  <div class="card">
-    <h2><span class="no">02</span>濾杯幾何學</h2>
-    <label>濾杯型式（決定流速路徑與容錯率）</label>
-    <select id="dripper"></select>
-    <div class="hint" id="dripperHint"></div>
-  </div>
-
-  <!-- 3. 大師手法 -->
-  <div class="card">
-    <h2><span class="no">03</span>大師萃取模型</h2>
-    <label>手法選擇</label>
+    <label style="margin-top:16px">手法選擇</label>
     <select id="master"></select>
-    <div class="hint" id="masterHint"></div>
-    <div class="reco" id="masterReco"></div>
+    <div class="hint clamp" id="masterHint"></div>
+    <div class="reco clamp" id="masterReco"></div>
 
     <div id="latteBox" style="display:none">
       <div class="row2" style="margin-top:12px">
@@ -384,6 +413,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <input type="range" id="tweak" min="-2" max="2" step="1" value="0">
     <div class="tweak-labels"><span class="lo">← 更亮 / 果酸</span><span id="tweakMid">平衡</span><span class="hi">更甜 / 醇厚 →</span></div>
 
+    <details style="margin-top:14px"><summary>進階：鎖定粉水比</summary>
     <div id="ratioLockBox">
       <label style="margin-top:16px">粉水比 <b>· 留空＝依引擎自動運算</b></label>
       <div style="display:flex;align-items:center;gap:10px">
@@ -391,13 +421,72 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <input type="number" id="ratioLock" step="0.5" min="8" max="20" placeholder="自動" inputmode="decimal" style="flex:1">
         <button class="btn-mini" id="ratioAuto" style="flex-shrink:0">回到自動</button>
       </div>
-      <div class="hint" id="ratioHint"></div>
+      <div class="hint clamp" id="ratioHint"></div>
     </div>
+    </details>
   </div>
 
-  <!-- 3b. 自訂手法 -->
+  <div class="reco" id="lastBox" style="margin-top:14px"></div>
+  <div class="reco" id="calibBox" style="margin-top:10px;display:none"></div>
+  </div>
+
+  <div id="paneBean" class="hide" role="tabpanel" aria-labelledby="tabBean">
   <div class="card">
-    <h2><span class="no">✎</span>我的手法（自訂儲存）</h2>
+    <h2><span class="no">豆</span>這包豆</h2>
+    <label>烘焙度（基礎溶解率）</label>
+    <select id="roast"></select>
+
+    <label>處理法（細胞壁完整度 → 溶解率修正）</label>
+    <select id="process"></select>
+    <div class="hint clamp" id="processHint"></div>
+
+    <label>產區風味（預期風味 → 水溫微調）</label>
+    <select id="origin"></select>
+    <div class="hint clamp" id="originHint"></div>
+  </div>
+  </div>
+
+  <div id="paneGear" class="hide" role="tabpanel" aria-labelledby="tabGear">
+
+  <div class="card">
+    <h2><span class="no">▽</span>濾杯幾何學</h2>
+    <label>濾杯型式（決定流速路徑與容錯率）</label>
+    <select id="dripper"></select>
+    <div class="hint clamp" id="dripperHint"></div>
+  </div>
+
+  <!-- 5. 兌水降溫（可折疊） -->
+  <div class="card">
+    <details>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">兌水精準降溫（免溫控壺）</summary>
+      <div class="hint" style="margin-top:8px">水剛煮沸只有 100°C？不用等降溫。用熱平衡混合公式，直接兌室溫水一秒到達目標水溫。</div>
+      <div class="row2" style="margin-top:10px">
+        <div><label>室溫水溫 (°C)</label><input type="number" id="roomT" value="25" min="0" max="40"></div>
+        <div><label>壺內備水量 (g)</label><input type="number" id="kettleW" value="400" min="100" max="1500"></div>
+      </div>
+      <div class="mix-out">
+        <div class="f" id="mixFormula">--</div>
+        <div class="s" id="mixNote"></div>
+      </div>
+    </details>
+  </div>
+  </div>
+
+  <div class="dock"><button class="btn-main" id="goBrew">☕ 進入大師導航模式</button></div>
+</div>
+
+<!-- ==================== 設定與紀錄頁 ====================
+     設定一次就不太動、或偶爾才看一次的東西全部收在這裡，
+     讓首頁只剩下「這一杯要怎麼沖」。全部折疊時一個螢幕看得完。 -->
+<div id="settingsPage" class="wrap hide">
+  <div class="topbar">
+    <button class="link" id="setBack">← 返回</button>
+    <div style="font-size:.72rem;color:var(--muted)">設定與紀錄</div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">我的手法（自訂儲存）</summary>
     <div id="customList"></div>
     <div class="btn-row">
       <button class="btn-sm" id="newCustom">＋ 新建手法</button>
@@ -425,21 +514,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       </div>
       <div class="hint" style="margin-top:8px">流速會由「水量增量 ÷ 秒數」自動換算，不需手動填寫。未勾選「注水」的段落＝等待滴乾／浸泡／攪拌等不注水動作。</div>
     </div>
-  </div>
-
-  <!-- 4. AI 運算藍圖 -->
-  <div class="card blueprint">
-    <h2><span class="no">AI</span>運算萃取藍圖</h2>
-    <div class="stats">
-      <div class="stat"><div class="k">目標水溫</div><div class="v temp" id="outTemp">--</div></div>
-      <div class="stat"><div class="k"><span id="waterLabel">總水量 </span><span id="outRatio"></span></div><div class="v water" id="outWater">--</div></div>
-      <div class="stat"><div class="k">研磨度</div><div class="v grind" id="outGrind">--</div></div>
-    </div>
-    <div class="calc-log" id="calcLog"></div>
-    <div id="warnBox"></div>
-    <div class="reco" id="bypassBox" style="display:none"></div>
-    <div class="reco" id="icedBox2" style="display:none"></div>
-    <div class="reco" id="milkBox" style="display:none"></div>
+    </details>
   </div>
 
   <!-- 4b. 磨豆機刻度校正（可折疊） -->
@@ -479,19 +554,23 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     </details>
   </div>
 
-  <!-- 5. 兌水降溫（可折疊） -->
+  <div class="card">
+    <h2><span class="no">♫</span>提示與螢幕</h2>
+    <div class="setrow">
+      <div><div class="sl">震動提示</div><div class="sd">換段時震一下。靜音環境下最可靠的提醒。</div></div>
+      <button class="tgl on" id="tglBuzz" aria-label="震動提示">📳</button>
+    </div>
+    <div class="setrow">
+      <div><div class="sl">螢幕恆亮</div><div class="sd">沖煮期間不讓螢幕自動熄掉。</div></div>
+      <button class="tgl" id="tglWake" aria-label="螢幕恆亮">🔆</button>
+    </div>
+    <div class="hint">語音的開關留在導航頁右上角 —— 沖到一半要靜音時，才不必退出整頁。</div>
+  </div>
+
   <div class="card">
     <details>
-      <summary style="font-size:.95rem;color:var(--text);font-weight:700">兌水精準降溫（免溫控壺）</summary>
-      <div class="hint" style="margin-top:8px">水剛煮沸只有 100°C？不用等降溫。用熱平衡混合公式，直接兌室溫水一秒到達目標水溫。</div>
-      <div class="row2" style="margin-top:10px">
-        <div><label>室溫水溫 (°C)</label><input type="number" id="roomT" value="25" min="0" max="40"></div>
-        <div><label>壺內備水量 (g)</label><input type="number" id="kettleW" value="400" min="100" max="1500"></div>
-      </div>
-      <div class="mix-out">
-        <div class="f" id="mixFormula">--</div>
-        <div class="s" id="mixNote"></div>
-      </div>
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">沖煮日誌（本機儲存）</summary>
+      <div style="margin-top:8px"><details open><summary id="logCount">尚無紀錄</summary><div id="logList"></div></details></div>
     </details>
   </div>
 
@@ -552,15 +631,6 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       </ul>
     </details>
   </div>
-
-  <div class="card">
-    <h2><span class="no">📓</span>沖煮日誌（本機儲存）</h2>
-    <div class="reco" id="lastBox" style="margin-top:0;margin-bottom:10px"></div>
-    <div class="reco" id="calibBox" style="margin-top:0;margin-bottom:10px;display:none"></div>
-    <details><summary id="logCount">尚無紀錄</summary><div id="logList"></div></details>
-  </div>
-
-  <div class="dock"><button class="btn-main" id="goBrew">☕ 進入大師導航模式</button></div>
 </div>
 
 <!-- ==================== 預覽頁 ====================
@@ -600,10 +670,9 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <div class="bname" id="bwName">—</div>
       <div class="bsub" id="bwSub">—</div>
     </div>
+    <!-- 只留語音：沖到一半要靜音是真的會用到；震動與螢幕恆亮設定一次就不動，放在設定頁 -->
     <div class="toggles">
       <button class="tgl on" id="tglVoice" title="語音導航">🔊</button>
-      <button class="tgl on" id="tglBuzz" title="震動提示">📳</button>
-      <button class="tgl" id="tglWake" title="螢幕恆亮">🔆</button>
     </div>
   </div>
 
@@ -1185,7 +1254,7 @@ function renderBlueprint(){
     熱拿鐵：牛奶 <b>${P.milk.hot}g</b>，加熱至 60–65°C。<br>
     冰拿鐵：冰塊 <b>${P.milk.ice}g</b> ＋ 冰牛奶 <b>${P.milk.cold}g</b>（冰塊融化後總量相當）。`;
   }else mb.style.display='none';
-  renderReco(); renderMix();
+  renderReco(); renderMix(); remeasureHints();
 }
 
 /* 智能手法推薦（依豆況） */
@@ -1477,7 +1546,7 @@ $('fsClose').onclick=()=>$('finishBox').classList.remove('show');
    接上瀏覽器歷史，iPhone 從螢幕左緣滑回才會是「回上一頁」，
    而不是像原本那樣直接把整個 PWA 關掉。
    ============================================================ */
-const VIEWS={setup:'setupPage',preview:'previewPage',brew:'brewPage'};
+const VIEWS={setup:'setupPage',settings:'settingsPage',preview:'previewPage',brew:'brewPage'};
 let curView='setup';
 function leaveBrew(){stopCountdown();running=false;clearInterval(tick);releaseWake();}
 function showView(v){
@@ -1495,6 +1564,8 @@ window.addEventListener('popstate',e=>showView(e.state&&e.state.view));
 
 $('goBrew').onclick=()=>{calc();renderPreview();nav('preview');};
 $('pvBack').onclick=()=>history.back();
+$('goSettings').onclick=()=>nav('settings');
+$('setBack').onclick=()=>history.back();
 $('pvStart').onclick=()=>{
   /* 手法與關鍵參數放在導航頁頂端：沖的時候要知道自己在沖什麼、目標多少水 */
   /* 只取括號前的短名：沖的時候不需要「（Tetsu Kasuya · 世界冠軍）」這截，留著只會被切掉 */
@@ -1666,12 +1737,27 @@ function renderVoiceHint(){
     : '目前只有系統預設嗓音。安裝作業系統的中文進階語音套件後，這裡就會出現音質更好的選項。';
 }
 renderVoiceHint();
-$('tglBuzz').onclick=e=>{buzzOn=!buzzOn;e.target.classList.toggle('on',buzzOn);};
+$('tglBuzz').onclick=e=>{buzzOn=!buzzOn;e.target.classList.toggle('on',buzzOn);savePrefs();
+  toast(buzzOn?'震動提示開啟':'震動提示關閉');};
 $('tglWake').onclick=async e=>{
   wantWake=!wantWake;e.target.classList.toggle('on',wantWake);
   if(wantWake){if('wakeLock'in navigator){await requestWake();toast('螢幕恆亮已啟用');}else toast('此瀏覽器不支援 Wake Lock');}
   else{releaseWake();toast('螢幕恆亮已關閉');}
+  savePrefs();
 };
+
+/* 這兩個開關搬到設定頁之後就必須記住 —— 在設定頁調好、下次開 App 又回到預設會像沒存到。
+   刻意與沖煮參數快照分開存：那份快照會被日誌的「一鍵沿用」整包還原，
+   提示偏好不該被某一杯的紀錄帶著走。 */
+const PREF_KEY='dripmatrix_pref_v1';
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({buzz:buzzOn,wake:wantWake}));}catch(e){}}
+(function loadPrefs(){
+  try{const d=JSON.parse(localStorage.getItem(PREF_KEY)||'null');
+    if(d){buzzOn=d.buzz!==false;wantWake=!!d.wake;}
+  }catch(e){}
+  $('tglBuzz').classList.toggle('on',buzzOn);
+  $('tglWake').classList.toggle('on',wantWake);
+})();
 
 /* ============================================================
    沖煮日誌（localStorage，防呆 try/catch，上限 30 筆）
@@ -1857,6 +1943,10 @@ $('saveLog').onclick=()=>{
     $('brewName').value='';
     verdict='';[...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
     toast(entry.verdict?'已儲存，下次開啟會給你校準建議':'已儲存至沖煮日誌');
+    /* 存完就把人帶回首頁：校準建議與「上次沖煮」剛剛就更新在那裡，
+       留在導航頁只會看到一張寫著「先不記錄，返回」的面板，像沒存成功。 */
+    $('finishBox').classList.remove('show');
+    nav('setup');
   }
 };
 
@@ -2041,7 +2131,10 @@ document.addEventListener('click',e=>{
   const cs=loadCustoms(), c=cs.find(x=>x.id===b.dataset.id);if(!c)return;
   if(b.classList.contains('cuse')){
     S.master='c:'+c.id;$('master').value=S.master;calc();
-    toast('已套用「'+c.name+'」');window.scrollTo({top:0,behavior:'smooth'});return;
+    toast('已套用「'+c.name+'」');
+    /* 手法清單在設定頁，但改到的是首頁的參數 —— 不把人帶回去會像按了沒反應 */
+    if(curView!=='setup')nav('setup');
+    selTab(0);window.scrollTo({top:0,behavior:'smooth'});return;
   }
   if(b.classList.contains('cedit')){openEditor(c);return;}
   if(b.classList.contains('cdel')){
@@ -2061,6 +2154,40 @@ document.addEventListener('click',e=>{
    安裝入口交還給瀏覽器原生選單（Chrome「安裝應用程式」/ Safari「加入主畫面」），
    不在 App 內顯示任何安裝提示卡片。
    ============================================================ */
+
+/* ---- 首頁分頁：只切 .hide 與 aria，刻意不進 history ——
+   iPhone 從左緣滑回應該直接離開整頁，不是在三個分頁之間退三次。
+   showView() 只切 .hide、不重建 DOM，所以從設定頁或預覽頁回來時分頁狀態自動保留。 ---- */
+const HOME_TABS=[['tabCup','paneCup'],['tabBean','paneBean'],['tabGear','paneGear']];
+function selTab(n){
+  HOME_TABS.forEach(([t,p],i)=>{
+    const on=i===n;
+    $(t).classList.toggle('on',on);
+    $(t).setAttribute('aria-selected',on);
+    $(t).tabIndex=on?0:-1;        // roving tabindex：整列算焦點序列中的一站
+    $(p).classList.toggle('hide',!on);
+  });
+  remeasureHints();
+}
+HOME_TABS.forEach(([t],i)=>{$(t).onclick=()=>selTab(i);});
+
+/* ---- 長說明夾行：只有真的被裁到才掛「更多」。
+   在 display:none 的分頁裡 scrollHeight 與 clientHeight 都是 0，量不到就先不標，
+   等分頁顯示時再量一次 —— 寧可少一顆按鈕，也不要掛一顆按了沒東西的「更多」。 ---- */
+const HINTS=['processHint','originHint','dripperHint','masterHint','ratioHint','masterReco'];
+function remeasureHints(){
+  HINTS.forEach(k=>{
+    const el=$(k); if(!el||el.classList.contains('open'))return;
+    el.classList.toggle('more', el.scrollHeight-el.clientHeight>2);
+  });
+}
+HINTS.forEach(k=>{
+  const el=$(k); if(!el)return;
+  el.setAttribute('role','button');el.tabIndex=0;el.setAttribute('aria-expanded','false');
+  const t=()=>{el.setAttribute('aria-expanded',el.classList.toggle('open'));};
+  el.onclick=t;
+  el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}};
+});
 
 if(!loadSettings())calc();
 renderLogs();renderCustoms();
