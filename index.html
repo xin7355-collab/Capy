@@ -227,6 +227,10 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .wrap.brew .action-box{margin-top:0;padding:11px 13px;flex-shrink:0}
 .wrap.brew .action-box .act{font-size:clamp(1rem,2.1vh,1.2rem)}
 .wrap.brew .action-box .sub{font-size:clamp(.7rem,1.45vh,.82rem);color:var(--muted);line-height:1.5;margin-top:5px}
+/* 繞圈指示：沖的時候最常忘記的就是「這一段圈要繞多大」，所以給它自己一行、
+   用水藍色與動作名稱分開，不要混在灰色的說明裡。 */
+.action-box .circ{font-size:clamp(.72rem,1.5vh,.86rem);color:var(--water);line-height:1.45;margin-top:5px;font-weight:600}
+.action-box .circ:empty{display:none}
 .wrap.brew .nextline{margin-top:0;flex-shrink:0}
 .wrap.brew .nextline .body{font-size:clamp(.72rem,1.5vh,.84rem)}
 .wrap.brew .nextline .nf{font-size:clamp(.92rem,1.95vh,1.1rem)}
@@ -589,16 +593,41 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     </details>
   </div>
 
-  <!-- 6. 沖煮日誌 -->
+  <!-- 注水基本功 -->
   <div class="card">
     <details>
       <summary style="font-size:.95rem;color:var(--text);font-weight:700">注水基本功（繞圈 · 流速 · 風味排除）</summary>
 
-      <div class="kb-h">繞圈路徑</div>
+      <div class="kb-h">繞圈怎麼繞（完整動作）</div>
       <ul class="kb">
-        <li><b>由內向外螺旋</b>：從中心點起繞，均勻向外，再等速收回中心。濾杯中央粉層最厚，由內向外能讓中心先浸潤並形成均勻對流。</li>
-        <li><b>邊界 1 公分禁區</b>：最外圈距濾紙壁約 1 公分就折返。水柱一旦碰到濾紙，水會沿壁流走而繞過粉層（通道效應），萃取不足、風味稀薄。</li>
-        <li><b>壺嘴高度 3～5 公分、保持垂直</b>：落差過大會強烈沖刷粉層，把微粉打進濾紙底部堵住排氣縫隙。</li>
+        <li><b>一圈的完整路徑是「出去再回來」</b>：從正中心起繞，一圈比一圈大，繞到最外圈後<b>不要停在外圈</b> —— 用同樣的速度一圈比一圈小地收回中心，然後再出去。來回循環到這一段的水量注完為止。只繞出去不收回來，中心會越來越少吃到水。</li>
+        <li><b>外圈的界線：距濾紙壁約 1 公分就折返</b>。水柱一旦碰到濾紙，水會沿著紙壁直接流下去、整個繞過粉層（通道效應），那一口就是稀的。</li>
+        <li><b>小圈到底多小</b>：常見的講法是「50 元硬幣大小」，直徑<b>約 2.8 公分</b>；也有人用 10 元硬幣（約 2.6 公分），差別不大。縮小範圍的目的是推開中央那塊最厚的粉，同時避免大水流沖刷邊緣細粉而帶出苦澀。</li>
+        <li><b>「要繞幾圈」沒有標準答案</b>：查不到任何權威來源給得出圈數，各家配方也都不寫。真正能控制的是<b>繞多大</b>與<b>繞多慢</b>這兩個旋鈕，圈數只是它們的結果。本 App 因此不顯示圈數，只告訴你這一段的範圍與節奏。</li>
+        <li><b>壺嘴高度 3～5 公分、保持垂直</b>：落差過大會強烈沖刷粉層，把微粉打進濾紙底部堵住排氣縫隙。貼得低，力道自然柔和。</li>
+        <li><b>水位不要高過粉層太多</b>：水一旦積起來，就會從粉層最薄弱的那一點集中流下去，萃取立刻變得不均勻。</li>
+      </ul>
+
+      <div class="kb-h">繞快還是繞慢？（這一題沒有定論）</div>
+      <ul class="kb">
+        <li><b>常見講法</b>：繞圈就是用水柱攪拌，繞越快攪拌越強、萃出來的物質越多。想提高萃取率就繞快一點。</li>
+        <li><b>反方的實測</b>：也有對照實驗指出，<b>快速注水會讓水溫明顯下降，而降溫的負面影響大於攪動帶來的增益</b>，結果反而是慢繞萃得比較多。</li>
+        <li><b>怎麼辦</b>：兩種說法都有人支持，<b>目前沒有定論</b>。建議用同一支豆、同一個研磨度，只改繞圈速度沖兩杯對照一次 —— 這比相信任何一方都可靠。預設先用「慢而穩」，因為它同時也比較好控制。</li>
+        <li><b>為什麼是畫圓，不是十字或 ∞ 字</b>：圓形的水流比較不容易產生紊流；十字、∞ 字這類來回折返的路徑擾動更亂，粉層容易被沖出溝。</li>
+      </ul>
+
+      <div class="kb-h">定點注水是錯的嗎？（不是，它是另一種手法）</div>
+      <ul class="kb">
+        <li><b>兩種手法的差別在粉床形狀</b>。<b>中心定點</b>：水垂直穿過中央，粉層整體向外翻滾、形成中間凹陷的「火山坑」，水與粉接觸時間較短，突出前段的酸質與明亮感。<b>繞圈</b>：從中心向外濕潤整個粉床、形成「碗狀」粉床，接觸面積大，萃取比較完整。</li>
+        <li><b>所以定點不是做錯，是在做另一件事</b>。本 App 裡就有手法刻意用定點：Kono 滲透點滴法的前段（完全不繞圈，靠毛細現象把水吸開）、4:6 法的最後一注（避免翻攪邊緣雜質、保持尾段乾淨）、濾掛的第三注（粉層太薄，繞圈容易沖穿）。</li>
+        <li><b>混合用法也很常見</b>：以中心定點為主體，搭配一個硬幣大小的小圈，既保有定點的穩定，又有一點點攪動。第二注的「小圈」本質上就是這個。</li>
+        <li><b>判斷依據是粉床，不是手感</b>：沖完掀開看，粉床應該是平坦的圓餅。中間深凹＝水太集中在中心；邊緣留一圈沒塌的粉牆＝外圈沒吃到水，下次把螺旋繞大一點（但仍然距紙壁 1 公分）。</li>
+      </ul>
+
+      <div class="kb-h">由內向外 vs 由外向內</div>
+      <ul class="kb">
+        <li><b>由內向外是主流</b>，理由明確：濾杯中央的粉層最厚，先讓中心浸潤才能形成均勻對流。本 App 所有手法都是這個方向。</li>
+        <li><b>由外向內的說法</b>：有來源認為從外圈起繞會讓流速變慢、形成類似半浸泡的狀態，口感比較圓潤厚實。<b>但這只有單一來源、沒有對照實驗</b>，當作可以試的方向就好，不要當成定律。</li>
       </ul>
 
       <div class="kb-h">流速的兩個數字（很多配方寫混了）</div>
@@ -624,7 +653,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
   <div class="card">
     <details>
       <summary style="font-size:.95rem;color:var(--text);font-weight:700">沖煮前置作業（悶蒸之前才是勝負關鍵）</summary>
-      <div class="hint" style="margin-top:8px">以下六項全部零成本，卻是新手與老手差距最大的地方。導航模式的計時從悶蒸開始，這些請在按下開始之前做完。</div>
+      <div class="hint" style="margin-top:8px">以下每一項都零成本，卻是新手與老手差距最大的地方。導航模式的計時從悶蒸開始，這些請在按下開始之前做完。</div>
 
       <div class="kb-h">器材</div>
       <ul class="kb">
@@ -732,7 +761,8 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
   <div class="action-box">
     <div class="tag">動作指示</div>
     <div class="act" id="actText">按下開始，跟著指針倒水</div>
-    <div class="sub" id="tipText"></div>
+    <div class="circ" id="circText"></div>
+    <div class="sub clamp" id="tipText"></div>
   </div>
   <div class="nextline" id="nextLine">
     <span class="lbl">下一段</span>
@@ -1351,32 +1381,51 @@ function liveTarget(t,i){
 }
 
 /* 產生該段的語音摘要：注水段報「注到 X 克，流速…」；非注水段報等待秒數 */
-/* 段落標題的口語版：去掉【】與「·」後面的補充說明，只留動作本身。
-   細節畫面上都看得到，用唸的反而會讓一句話塞太多字。 */
+/* 這一段的圈要怎麼繞。
+   刻意從既有的 action／tip 關鍵字推導，而不是在每個手法裡多塞一個欄位 ——
+   那些文字是配方的一部分，動它要先確認；推導則是純新增、改不到配方。
+   查不到關鍵字就回空字串，寧可少顯示一行，也不要掰一個看起來很精確的指示。
+
+   刻意不寫「約繞幾圈」：查證過沒有任何權威來源給得出圈數，真正能控制的
+   是「繞多大」與「繞多慢」。編一個數字出來只會讓人以為那是配方的一部分。 */
+const SPIRAL='中心起 → 向外螺旋到距濾紙 1 公分折返 → 等速收回中心，反覆。';
+function circleHint(s){
+  if(!s||!s.pour)return '';
+  const t=(s.action||'')+' '+(s.tip||'');
+  // 順序有意義：浸泡式要先攔下來，否則它 tip 裡的「較大水流」會被誤判成要繞圈
+  if(/浸泡|注滿|閥門關|關閥/.test(t))      return '浸泡式：注滿就好，不必講究繞圈，注完靜置等它泡。';
+  if(/點滴|一顆顆/.test(t))                return '水滴落在正中心 1 公分內，完全不繞圈，靠粉層自己把水吸開。';
+  if(/中心定點|定點/.test(t))              return '水柱固定在正中心不繞，避免翻攪邊緣的細粉。';
+  if(/硬幣/.test(t))                       return '只繞中央 50 元硬幣大小（直徑約 2.8 公分）的小圈，不要外擴。';
+  if(/潤濕全部|打濕|全部粉層/.test(t))     return '繞圈把全部的粉都打濕，重點是讓每一處同時吃到水，不必繞得漂亮。';
+  if(/三分之二/.test(t))                   return '範圍收在中央三分之二，絕不碰到邊緣。'+SPIRAL;
+  if(/小範圍|小圈|縮小範圍|一半/.test(t))  return '縮小到中央約一半的範圍繞圈，'+SPIRAL;
+  if(/搖晃|搖杯|輕搖|旋轉/.test(t))        return '這段靠搖晃濾杯讓粉層平整，不是靠繞圈。';
+  if(/挖深穴|高位/.test(t))                return '高位大水流，由中心快速向外繞到全部粉層都濕。';
+  if(/細水柱|細水流/.test(t))              return '維持細水柱繞圈，'+SPIRAL+'別沖破邊緣的粉牆。';
+  if(/大水流|快速|一鼓作氣|加快/.test(t))  return SPIRAL+'這段刻意快注，用水流動能把粉層翻起來。';
+  // 其餘注水段一律給預設螺旋：這就是本 App 的預設手勢，少給一行不如給正確的那一行
+  return SPIRAL+'慢繞，水柱不要斷。';
+}
+
+/* 段落標題的口語版：唸「標籤，動作」兩件事就好。
+   舊版是「去掉【】再以第一個 · 切斷」，碰到【第一注·悶蒸】中心向外螺旋 這種
+   · 在括號裡面的寫法，會切在括號內而只剩「第一注」—— 真正要照做的動作
+   反而被丟掉。改成先把【標籤】與動作本體分開，各自再砍掉自己的補充說明。 */
 function stepShort(action){
-  return String(action||'').replace(/【|】/g,' ').split(/\s*[·・]\s*/)[0].trim();
+  const raw=String(action||'').trim();
+  const m=raw.match(/^【([^】]*)】\s*(.*)$/);
+  if(!m)return raw.split(/\s*[·・]\s*/)[0].trim();
+  const label=m[1].split(/\s*[·・]\s*/)[0].trim();   // 【第一注·悶蒸】→ 第一注
+  const body=m[2].split(/\s*[·・]\s*/)[0].trim();    // 由內向外螺旋 · 決定風味主體 → 由內向外螺旋
+  return [label,body].filter(Boolean).join('，');
 }
 
-/* 語音拆句：一句一件事，各自成為獨立的 utterance，
-   讓合成器在句與句之間自然停頓，而不是把目標水量和流速黏成一長串。 */
-function stepLines(i){
-  const s=P.steps[i], prev=i>0?P.steps[i-1].target:0, dur=Math.round(s.end-s.start);
-  const out=[];
-  if(s.pour&&s.target>prev){
-    out.push(`注到 ${s.target} 克。`);
-    out.push(`這段加 ${s.target-prev} 克。`);
-    if(s.flow&&s.flow!=='—')out.push(`流速 ${s.flow}。`);
-  }else{
-    out.push(`維持 ${dur} 秒。`);
-  }
-  return out;
-}
-
-/* 依序播報：第一句可打斷前一段的殘句，其餘接續排隊 */
+/* 一段只唸一句：標籤＋動作。
+   水量、流速、剩餘秒數全部不唸 —— 那些畫面上都看得到，用耳朵追只會變成雜訊。
+   語音只負責回答「現在手上要做什麼動作」。 */
 function announce(lead,i){
-  const head=[lead,stepShort(P.steps[i].action)].filter(Boolean).join('，')+'。';
-  speak(head);
-  stepLines(i).forEach(l=>speak(l,true));
+  speak([lead,stepShort(P.steps[i].action)].filter(Boolean).join('，')+'。',lead==='準備');
 }
 
 function loop(){
@@ -1396,18 +1445,25 @@ function loop(){
     lastIdx=i;announced5=false;
     $('actText').textContent=s.action;
     $('flowText').textContent=s.flow;
+    $('circText').textContent=circleHint(s);
     $('tipText').textContent=s.tip||'';
+    remeasureHints();                            // tip 夾行的「更多」要跟著重算
     $('stepGoal').textContent='本段目標 '+s.target+' g';
     if(running){
       announce('',i);
       buzz([80,60,80]);beep(s.pour?880:520);
     }
   }
-  // 段末 10 秒先報下一段：流速要在需要用到之前就聽得到，不是同時
-  if(running&&!announced5&&i<P.steps.length-1&&s.end-t<=10){
+  /* 段末 10 秒預告下一段，但只預告注水段 —— 等待段你本來就沒事做，
+     先講一次、待會再講一次只是噪音。預告走排隊而不是打斷：舊版的預告會
+     cancel()，段長 ≤10 秒時（例如 4:6 法第 2 段只有 5 秒）會把剛排進去的
+     本段播報整批砍掉，結果是「唸一半被切斷」。 */
+  const lead=s.end-t;
+  if(running&&!announced5&&i<P.steps.length-1&&lead<=10){
     announced5=true;
-    announce('準備',i+1);
-    beep(660,0.08);
+    /* 下限 6 秒：短的等待段一進去 lead 就只剩 5 秒，這時預告等於「同一句話
+       隔六秒講兩遍」，正是聽起來很趕的來源。太近就乾脆不預告，等它自己唸。 */
+    if(lead>=6&&P.steps[i+1].pour){announce('準備',i+1);beep(660,0.08);}
   }
   renderNext(i,t);
 
@@ -1812,7 +1868,7 @@ document.addEventListener('visibilitychange',()=>{
 setTimeout(()=>checkUpdate(),4000);                // 開啟後讓首屏先畫完再查
 setInterval(()=>checkUpdate(),VER_CHECK_MS);
 
-$('tglVoice').onclick=e=>{voiceOn=!voiceOn;e.target.classList.toggle('on',voiceOn);toast(voiceOn?'語音導航開啟':'語音導航關閉');};
+$('tglVoice').onclick=e=>{voiceOn=!voiceOn;e.target.classList.toggle('on',voiceOn);savePrefs();toast(voiceOn?'語音導航開啟':'語音導航關閉');};
 
 /* 嗓音切換與試聽 */
 $('voiceSel').addEventListener('change',()=>{
@@ -1820,9 +1876,9 @@ $('voiceSel').addEventListener('change',()=>{
   if(!v)return;
   zhVoice=v;
   try{localStorage.setItem(VOICE_KEY,v.name);}catch(e){}
-  speak('注到 180 克，流速每秒 4 到 5 克');
+  speak('第二注，五十元硬幣繞圈');
 });
-$('voiceTest').onclick=()=>speak('準備，第二刀，五十元硬幣繞圈，注到 180 克，這段加 120 克，流速每秒 4 到 5 克');
+$('voiceTest').onclick=()=>speak('準備，第二刀，由內向外螺旋');
 
 /* 若系統只裝了精簡版嗓音，提示使用者可下載音質更好的版本。
    ── 必須在 voiceschanged 之後重算：iOS 的 getVoices() 初次呼叫回傳空陣列，
@@ -1853,13 +1909,14 @@ $('tglWake').onclick=async e=>{
    提示偏好不該被某一杯的紀錄帶著走。 */
 const PREF_KEY='dripmatrix_pref_v1';
 let zoomHinted=false;
-function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({buzz:buzzOn,wake:wantWake,zhint:zoomHinted}));}catch(e){}}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({buzz:buzzOn,wake:wantWake,zhint:zoomHinted,voice:voiceOn}));}catch(e){}}
 (function loadPrefs(){
   try{const d=JSON.parse(localStorage.getItem(PREF_KEY)||'null');
-    if(d){buzzOn=d.buzz!==false;wantWake=!!d.wake;zoomHinted=!!d.zhint;}
+    if(d){buzzOn=d.buzz!==false;wantWake=!!d.wake;zoomHinted=!!d.zhint;voiceOn=d.voice!==false;}
   }catch(e){}
   $('tglBuzz').classList.toggle('on',buzzOn);
   $('tglWake').classList.toggle('on',wantWake);
+  $('tglVoice').classList.toggle('on',voiceOn);   // 嫌吵關掉之後，下次開 App 不該又全部回來
 })();
 
 /* ============================================================
@@ -2382,7 +2439,7 @@ HOME_TABS.forEach(([t],i)=>{$(t).onclick=()=>selTab(i);});
 /* ---- 長說明夾行：只有真的被裁到才掛「更多」。
    在 display:none 的分頁裡 scrollHeight 與 clientHeight 都是 0，量不到就先不標，
    等分頁顯示時再量一次 —— 寧可少一顆按鈕，也不要掛一顆按了沒東西的「更多」。 ---- */
-const HINTS=['processHint','originHint','dripperHint','masterHint','ratioHint','masterReco'];
+const HINTS=['processHint','originHint','dripperHint','masterHint','ratioHint','masterReco','tipText'];
 function remeasureHints(){
   HINTS.forEach(k=>{
     const el=$(k); if(!el||el.classList.contains('open'))return;
