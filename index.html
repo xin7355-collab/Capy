@@ -631,6 +631,15 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       </ul>
     </details>
   </div>
+
+  <div class="card">
+    <h2><span class="no">ⓘ</span>關於</h2>
+    <div class="setrow">
+      <div><div class="sl">目前版本</div><div class="sd" id="appVer">—</div></div>
+      <button class="btn-mini" id="chkUpd">檢查更新</button>
+    </div>
+    <div class="hint">改版後這一頁會自己換成新版，不用手動關掉重開。沖煮進行中不會打斷你 —— 會等你離開導航頁再換。</div>
+  </div>
 </div>
 
 <!-- ==================== 預覽頁 ====================
@@ -1554,6 +1563,7 @@ function showView(v){
   if(curView==='brew'&&v!=='brew'){
     leaveBrew();                                 // 離開導航頁一定要停表與放掉螢幕恆亮
     $('finishBox').classList.remove('show');     // 完成面板是覆蓋層，換頁時要收掉
+    setTimeout(applyUpdate,0);                   // 沖煮中擱置的版本更新，離開後才套用
   }
   Object.entries(VIEWS).forEach(([k,id])=>{$(id).classList.toggle('hide',k!==v);});
   curView=v;window.scrollTo(0,0);
@@ -1709,6 +1719,94 @@ async function requestWake(){
 }
 function releaseWake(){try{wakeLock&&wakeLock.release();wakeLock=null;}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&running)requestWake();});
+
+/* ============================================================
+   版本與自動更新
+
+   為什麼需要這整段：vite-plugin-pwa 只有在 injectRegister 是 'auto' 時，
+   才會因為 registerType:'autoUpdate' 自動開啟 skipWaiting / clientsClaim。
+   本專案明寫 'inline'，走不到那個分支，所以在補上 workbox 設定之前，
+   新版 Service Worker 會永遠卡在 waiting —— 使用者得把 App 從多工滑掉
+   重開才換得到新版。設定補好之後，SW 會自己接管，但「已經開著的那一頁」
+   還是舊的 HTML，所以仍然需要這裡主動重載。
+   ============================================================ */
+const APP_VER='__APP_VER__';
+const VER_CHECK_MS=30*60*1000;      // 開著不動時的定期檢查
+const VER_FORE_MS=10*60*1000;       // 回到前景時的檢查間隔下限
+let verLastCheck=0, pendingVer=null, swHadController=false;
+
+/* 導航頁一律不重載：重載會讓計時器歸零，整杯就毀了。
+   不能只看 running —— 暫停中 running 也是 false，而暫停中的人顯然更不想被重載。
+   用 curView 一次涵蓋倒數中、倒水中、暫停中與完成評鑑面板還開著的狀態。 */
+const canReload=()=>curView!=='brew';
+
+function applyUpdate(){
+  if(!pendingVer||!canReload())return;
+  const ver=pendingVer;
+  /* 迴圈保險：同一個版本只自動重載一次。iOS 偶爾要冷啟動才換得掉 SW，
+     少了這道保險就會變成「偵測到新版 → 重載 → 還是舊版」無限打轉。 */
+  let tried=null;
+  try{tried=sessionStorage.getItem('dm_reload_ver');}catch(e){}
+  if(tried===ver){
+    pendingVer=null;
+    toast('更新需要重開：把 App 從多工滑掉再開一次');
+    return;
+  }
+  try{sessionStorage.setItem('dm_reload_ver',ver);}catch(e){}
+  pendingVer=null;
+  toast('已有新版，正在更新…');
+  const go=()=>location.reload();
+  if(!('serviceWorker'in navigator)){setTimeout(go,1200);return;}
+  navigator.serviceWorker.getRegistration().then(reg=>{
+    if(!reg){setTimeout(go,1200);return;}
+    /* 先請 SW 去抓新版：直接重載只會從舊的預快取再拿一次同一份舊頁面。
+       SW 換好會觸發 controllerchange（下面有監聽），4 秒沒動靜就自己重載，
+       涵蓋「SW 其實已是最新、只有這一頁是舊的」這種情況。 */
+    reg.update().catch(()=>{});
+    setTimeout(go,4000);
+  }).catch(()=>setTimeout(go,1200));
+}
+
+async function checkUpdate(manual){
+  verLastCheck=Date.now();
+  let srv=null;
+  try{
+    // no-store：GitHub Pages 對靜態檔會給 max-age，不繞過就只會拿到舊的版本號
+    const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});
+    if(r.ok)srv=(await r.json()).ver;
+  }catch(e){}
+  if(!srv){
+    // 連不上或還沒有版本檔：安靜略過，只有使用者自己按的時候才回報
+    if(manual)toast('查不到版本資訊，請確認網路後再試');
+    return;
+  }
+  if(srv===APP_VER){
+    if(manual)toast('已經是最新版');
+    return;
+  }
+  pendingVer=srv;
+  if(manual&&!canReload())toast('沖煮中先不打斷，回到首頁就會更新');
+  applyUpdate();
+}
+
+if('serviceWorker'in navigator){
+  swHadController=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    /* 首次安裝時 controller 也會從 null 變成有值，那一次什麼都沒變、不能重載。
+       只有「本來就有 controller，現在換人了」才代表真的換版。 */
+    if(!swHadController){swHadController=true;return;}
+    pendingVer=pendingVer||'sw';
+    applyUpdate();
+  });
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState!=='visible')return;
+  applyUpdate();                                   // 沖煮中擱置的更新，回來就補上
+  if(Date.now()-verLastCheck>VER_FORE_MS)checkUpdate();
+});
+setTimeout(()=>checkUpdate(),4000);                // 開啟後讓首屏先畫完再查
+setInterval(()=>checkUpdate(),VER_CHECK_MS);
 
 $('tglVoice').onclick=e=>{voiceOn=!voiceOn;e.target.classList.toggle('on',voiceOn);toast(voiceOn?'語音導航開啟':'語音導航關閉');};
 
@@ -2188,6 +2286,9 @@ HINTS.forEach(k=>{
   el.onclick=t;
   el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}};
 });
+
+$('appVer').textContent=APP_VER;
+$('chkUpd').onclick=()=>{toast('檢查中…');checkUpdate(true);};
 
 if(!loadSettings())calc();
 renderLogs();renderCustoms();
