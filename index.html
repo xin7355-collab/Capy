@@ -119,7 +119,7 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .pacer svg{transform:rotate(-90deg)}
 .pacer .ring-bg{stroke:var(--line);fill:none}
 .pacer .ring-fg{stroke:var(--crema);fill:none;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
-.pacer .center{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.pacer .center{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 16%;text-align:center}
 .pacer .live{font-family:var(--mono);font-size:3.4rem;font-weight:900;line-height:1;letter-spacing:-.03em}
 .pacer .live small{font-size:1.1rem;color:var(--muted);font-weight:600}
 .pacer .live small:empty{display:none}
@@ -147,7 +147,7 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .pvsum b{font-family:var(--mono);font-size:1rem;color:var(--text);font-weight:800}
 
 /* 本段剩餘秒數：碼錶只告訴你過了多久，真正要追的是這一段還剩幾秒 */
-.steprem{text-align:center;font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--water);margin-top:3px;letter-spacing:.04em}
+.steprem{text-align:center;font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--water);margin-top:3px;letter-spacing:.04em}
 .steprem.urgent{color:var(--hot);animation:rempulse .5s ease-in-out infinite alternate}
 .steprem.done{color:var(--ok);animation:none}
 @keyframes rempulse{from{opacity:.45}to{opacity:1}}
@@ -616,7 +616,6 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 
   <div class="btime">
     <span class="el" id="timer">00:00</span>
-    <span class="steprem" id="stepRem">本段剩餘 --</span>
   </div>
 
   <!-- 招牌黑科技：即時注水節拍器 -->
@@ -630,6 +629,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <div class="cap">秤上現在應到</div>
         <div class="live" id="liveG">0<small> g</small></div>
         <div class="goal" id="stepGoal">本段目標 -- g</div>
+        <div class="steprem" id="stepRem">本段剩餘 --</div>
       </div>
     </div>
   </div>
@@ -1428,7 +1428,9 @@ function countdown(done){
   $('ring').style.stroke='var(--water)';
   const show=()=>{
     $('liveG').innerHTML=n+'<small></small>';
-    $('stepGoal').textContent=`即將開始 · 首段目標 ${P.steps[0].target} g`;
+    /* 與倒水中同字樣：倒數結束時 lastIdx 已是 0，loop() 不會再改寫這行，
+       用「首段目標」會一路留到第一段結束 */
+    $('stepGoal').textContent=`本段目標 ${P.steps[0].target} g`;
     $('ring').style.strokeDashoffset=RING_LEN*(1-n/CD_SECS);
   };
   show();beep(620,0.12);buzz(60);
