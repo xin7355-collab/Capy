@@ -106,7 +106,8 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 /* ============================================================
    沖煮導航頁
    ============================================================ */
-#brewPage{display:none}
+/* 初始隱藏交給 .hide：ID 選擇器的優先度會壓過 .wrap.brew 的 display:flex，
+   留著會讓換頁後的導航頁整個消失。 */
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
 .link{background:none;border:none;color:var(--muted);font-size:.85rem;cursor:pointer;padding:6px 0}
 .toggles{display:flex;gap:8px}
@@ -166,6 +167,62 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .btn-play:disabled{opacity:.55}
 .btn-play.pause{background:rgba(227,107,79,.15);border:2px solid var(--hot);color:var(--hot);box-shadow:none}
 .btn-round:active,.btn-play:active{transform:scale(.94)}
+
+/* 換頁用 class 而不是行內 display —— 行內樣式會蓋掉導航頁的 display:flex，
+   版面就退回普通區塊流，高度分配與圓環縮放全部失效。 */
+.hide{display:none!important}
+
+/* ---- 導航頁：整杯沖煮必須完整裝進一個螢幕，沖的時候沒有手可以捲畫面 ----
+   高度用 flex 分配，節拍器圓環吃掉剩下的空間並隨螢幕縮放。 */
+.wrap.brew{height:100dvh;padding:0 14px calc(10px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.btop{display:flex;align-items:center;gap:10px;padding-top:calc(8px + env(safe-area-inset-top))}
+.btop .bmeta{flex:1;min-width:0}
+.btop .bname{font-size:.82rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btop .bsub{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:1px}
+.btop .tgl{padding:6px 8px;font-size:.78rem;line-height:1}
+
+/* 進度量條：漸變色＋流動動畫，讓「走到哪裡」一眼可見 */
+.pbar{height:7px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;flex-shrink:0}
+.pbar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--water),var(--crema),var(--copper),var(--crema),var(--water));
+  background-size:260% 100%;transition:width .3s linear;animation:pbflow 3.4s linear infinite}
+.pbar.done i{background:linear-gradient(90deg,var(--ok),var(--crema),var(--ok));background-size:260% 100%}
+@keyframes pbflow{from{background-position:0% 50%}to{background-position:260% 50%}}
+.prow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.66rem;color:var(--muted);flex-shrink:0}
+.prow b{color:var(--water);font-weight:700}
+
+.btime{display:flex;align-items:baseline;justify-content:center;gap:12px;flex-shrink:0}
+.btime .el{font-family:var(--mono);font-size:1.75rem;font-weight:800;color:var(--muted)}
+.btime .el.run{color:var(--text)}.btime .el.done{color:var(--ok)}
+
+.pacerwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+/* 圓環吃掉版面剩下的空間：大螢幕放大、小螢幕縮小以保留底部按鈕的餘裕 */
+.wrap.brew .pacer{width:min(320px,100%,36vh);height:min(320px,100%,36vh);margin:0}
+.wrap.brew .pacer svg{width:100%;height:100%}
+.wrap.brew .pacer .live{font-size:clamp(2.2rem,11vw,3.4rem)}
+.wrap.brew .action-box{margin-top:0;padding:11px 13px;flex-shrink:0}
+.wrap.brew .action-box .act{font-size:1rem}
+.wrap.brew .action-box .sub{font-size:.7rem;color:var(--muted);line-height:1.5;margin-top:5px}
+.wrap.brew .flowline,.wrap.brew .nextline{margin-top:0;flex-shrink:0}
+.wrap.brew .flowline{padding:8px 13px}
+.wrap.brew .ctrl{margin:2px 0 0;gap:18px;flex-shrink:0}
+.wrap.brew .btn-round{width:56px;height:56px;font-size:.8rem}
+.wrap.brew .btn-play{width:78px;height:78px;font-size:1rem}
+
+/* 完成後的評鑑表：導航頁不捲，所以完成畫面改成覆蓋整頁的獨立面板 */
+.fsheet{position:fixed;inset:0;z-index:60;background:rgba(18,13,10,.95);display:none;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:calc(20px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+.fsheet.show{display:block}
+.fsin{max-width:520px;margin:0 auto}
+.target{background:rgba(216,155,90,.08);border:1px solid rgba(216,155,90,.32);border-radius:13px;padding:12px 14px;margin:12px 0;text-align:left}
+.target .tl{font-size:.64rem;color:var(--crema);font-weight:700;letter-spacing:.12em}
+.target .tv{font-size:1.05rem;font-weight:800;margin-top:3px}
+.target .td{font-family:var(--mono);font-size:.68rem;color:var(--muted);margin-top:5px;line-height:1.6}
+.adjust{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
+  margin-top:10px;font-size:.76rem;line-height:1.65;text-align:left;display:none}
+.adjust.show{display:block}
 
 /* 全局藍圖橫條 */
 .strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-top:10px}
@@ -406,6 +463,22 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     </details>
   </div>
 
+  <!-- 4c. 語音導航（從導航頁搬過來：沖煮當下沒有手可以挑嗓音） -->
+  <div class="card">
+    <details id="voiceCard">
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">語音導航嗓音</summary>
+      <div id="voiceBox">
+        <div class="hint" style="margin-top:8px">導航頁右上角的 🔊 負責開關語音，嗓音在這裡挑好就行。</div>
+        <label>嗓音</label>
+        <div style="display:flex;gap:8px">
+          <select id="voiceSel" style="flex:1"></select>
+          <button class="btn-mini" id="voiceTest" style="flex-shrink:0">試聽</button>
+        </div>
+        <div class="hint" id="voiceHint"></div>
+      </div>
+    </details>
+  </div>
+
   <!-- 5. 兌水降溫（可折疊） -->
   <div class="card">
     <details>
@@ -493,7 +566,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 <!-- ==================== 預覽頁 ====================
      按下開始之前先把整杯讀完：參數、每一段要注到幾克、用什麼流速、總共多久。
      導航頁的資訊都是「當下那一秒」才出現，開始前需要一個能慢慢看的地方。 -->
-<div id="previewPage" class="wrap" style="display:none">
+<div id="previewPage" class="wrap hide">
   <div class="topbar">
     <button class="link" id="pvBack">← 改參數</button>
     <div style="font-size:.72rem;color:var(--muted)">開始前先看一遍</div>
@@ -520,31 +593,36 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 </div>
 
 <!-- ==================== 沖煮頁 ==================== -->
-<div id="brewPage" class="wrap">
-  <div class="topbar">
-    <button class="link" id="backBtn">← 回預覽</button>
+<div id="brewPage" class="wrap brew hide">
+  <div class="btop">
+    <button class="link" id="backBtn">←</button>
+    <div class="bmeta">
+      <div class="bname" id="bwName">—</div>
+      <div class="bsub" id="bwSub">—</div>
+    </div>
     <div class="toggles">
-      <button class="tgl on" id="tglVoice">🔊 語音</button>
-      <button class="tgl on" id="tglBuzz">📳 震動</button>
-      <button class="tgl" id="tglWake">🔆 恆亮</button>
+      <button class="tgl on" id="tglVoice" title="語音導航">🔊</button>
+      <button class="tgl on" id="tglBuzz" title="震動提示">📳</button>
+      <button class="tgl" id="tglWake" title="螢幕恆亮">🔆</button>
     </div>
   </div>
 
-  <div class="card" style="padding-top:12px">
-    <div id="voiceBox" style="display:none;margin-bottom:12px">
-      <label style="margin-top:0">語音嗓音</label>
-      <div style="display:flex;gap:8px">
-        <select id="voiceSel" style="flex:1"></select>
-        <button class="btn-mini" id="voiceTest" style="flex-shrink:0">試聽</button>
-      </div>
-      <div class="hint" id="voiceHint"></div>
-    </div>
-    <div class="timer" id="timer">00:00</div>
-    <div class="steprem" id="stepRem">本段剩餘 --</div>
+  <!-- 進度量條：整杯走到哪裡 -->
+  <div class="pbar" id="pbar"><i id="pbarFill"></i></div>
+  <div class="prow">
+    <span id="pStep">第 1 段 / 共 1 段</span>
+    <span id="pWater"><b>0</b> / 0 g</span>
+  </div>
 
-    <!-- 招牌黑科技：即時注水節拍器 -->
+  <div class="btime">
+    <span class="el" id="timer">00:00</span>
+    <span class="steprem" id="stepRem">本段剩餘 --</span>
+  </div>
+
+  <!-- 招牌黑科技：即時注水節拍器 -->
+  <div class="pacerwrap">
     <div class="pacer">
-      <svg width="250" height="250">
+      <svg viewBox="0 0 250 250" preserveAspectRatio="xMidYMid meet">
         <circle class="ring-bg" cx="125" cy="125" r="112" stroke-width="10"/>
         <circle class="ring-fg" id="ring" cx="125" cy="125" r="112" stroke-width="10"/>
       </svg>
@@ -554,50 +632,59 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <div class="goal" id="stepGoal">本段目標 -- g</div>
       </div>
     </div>
-
-    <div class="action-box">
-      <div class="tag">動作指示</div>
-      <div class="act" id="actText">按下開始，跟著指針倒水</div>
-    </div>
-    <div class="flowline"><span style="font-size:.78rem;color:var(--muted)">建議流速</span><span class="fv" id="flowText">--</span></div>
-    <div class="nextline" id="nextLine">
-      <span class="lbl">下一段</span>
-      <span class="body" id="nextText">—</span>
-      <span class="nf" id="nextFlow"></span>
-    </div>
-    <div class="tip" id="tipBox" style="display:none"><span id="tipText"></span></div>
-
-    <div class="ctrl">
-      <button class="btn-round" id="resetBtn">歸零</button>
-      <button class="btn-play" id="playBtn">開始</button>
-    </div>
   </div>
 
-  <div class="card">
-    <h2 style="margin-bottom:4px"><span class="no">MAP</span>全局萃取藍圖</h2>
-    <div class="strip" id="strip"></div>
+  <div class="action-box">
+    <div class="tag">動作指示</div>
+    <div class="act" id="actText">按下開始，跟著指針倒水</div>
+    <div class="sub" id="tipText"></div>
+  </div>
+  <div class="flowline"><span style="font-size:.78rem;color:var(--muted)">建議流速</span><span class="fv" id="flowText">--</span></div>
+  <div class="nextline" id="nextLine">
+    <span class="lbl">下一段</span>
+    <span class="body" id="nextText">—</span>
+    <span class="nf" id="nextFlow"></span>
   </div>
 
-  <div class="finish" id="finishBox">
-    <div style="font-weight:800;color:var(--ok)">✅ 沖煮完成，移開濾杯，搖晃咖啡液後品嚐</div>
-    <div style="font-size:.72rem;color:var(--muted);margin-top:6px">別忘了搖勻下壺再喝 — 前後段濃度差很多。</div>
-    <div class="stars" id="stars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+  <div class="ctrl">
+    <button class="btn-round" id="resetBtn">歸零</button>
+    <button class="btn-play" id="playBtn">開始</button>
+  </div>
+</div>
+
+<!-- ============ 完成後的評鑑表（覆蓋整頁，導航頁本身不捲） ============ -->
+<div class="fsheet" id="finishBox">
+  <div class="fsin">
+    <div style="font-weight:800;color:var(--ok);font-size:1.05rem">✅ 沖煮完成</div>
+    <div style="font-size:.74rem;color:var(--muted);margin-top:6px;line-height:1.6">移開濾杯，搖勻下壺再喝 — 前後段濃度差很多，不搖勻每一口都不一樣。</div>
+
+    <div class="target">
+      <div class="tl">這杯的目標味道</div>
+      <div class="tv" id="fsTarget">—</div>
+      <div class="td" id="fsTargetDetail">—</div>
+    </div>
+
+    <div style="text-align:center">
+      <div class="stars" id="stars"><span data-v="1">★</span><span data-v="2">★</span><span data-v="3">★</span><span data-v="4">★</span><span data-v="5">★</span></div>
+    </div>
 
     <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">實際總萃取時間（滴完為止）· 校準研磨度用</div>
-    <div class="chips" id="secsRow" style="justify-content:center;margin-top:0;margin-bottom:10px">
+    <div class="chips" id="secsRow" style="margin-top:0;margin-bottom:12px">
       <span class="chip on" id="secsChip">--:--</span>
       <span class="chip" id="secsEdit">手動修正</span>
     </div>
 
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">這杯喝起來偏哪一邊？</div>
-    <div class="chips" id="verdictRow" style="justify-content:center;margin-top:0;margin-bottom:10px">
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">實際喝起來偏哪一邊？（手動調整，會一起記下來）</div>
+    <div class="chips" id="verdictRow" style="margin-top:0;margin-bottom:4px">
       <span class="chip" data-v="sour">偏酸 / 太薄</span>
       <span class="chip" data-v="good">剛剛好</span>
       <span class="chip" data-v="bitter">偏苦 / 澀</span>
     </div>
+    <div class="adjust" id="fsAdjust"></div>
 
-    <input type="text" id="brewName" maxlength="24" placeholder="為這杯命名（選填，如：古吉日曬 冰咖啡）" style="text-align:center;font-size:.88rem;margin-bottom:10px">
-    <button class="btn-sm" id="saveLog">儲存本次沖煮紀錄</button>
+    <input type="text" id="brewName" maxlength="24" placeholder="為這杯命名（選填，如：古吉日曬 冰咖啡）" style="text-align:center;font-size:.88rem;margin:12px 0 10px">
+    <button class="btn-main" id="saveLog" style="width:100%">儲存本次沖煮紀錄</button>
+    <button class="btn-mini" id="fsClose" style="width:100%;margin-top:10px">先不記錄，返回</button>
   </div>
 </div>
 
@@ -1202,15 +1289,20 @@ function loop(){
   const t=elapsed(), i=stepAt(t), s=P.steps[i];
   const done=t>=P.steps[P.steps.length-1].end;
   $('timer').textContent=fmt(t);
-  $('timer').className='timer '+(done?'done':running?'run':'');
+  $('timer').className='el '+(done?'done':running?'run':'');
+
+  /* 整杯進度：量條走的是時間（最貼近「還要站多久」），旁邊補上段數與累計水量 */
+  const pct=clamp(t/Math.max(1,P.plan),0,1)*100;
+  $('pbarFill').style.width=pct+'%';
+  $('pbar').classList.toggle('done',done);
+  $('pStep').textContent=done?'全部完成':`第 ${i+1} 段 / 共 ${P.steps.length} 段`;
 
   // 換段事件：語音 + 震動 + 音效
   if(i!==lastIdx){
     lastIdx=i;announced5=false;
     $('actText').textContent=s.action;
     $('flowText').textContent=s.flow;
-    $('tipBox').style.display=s.tip?'flex':'none';
-    $('tipText').textContent=s.tip;
+    $('tipText').textContent=s.tip||'';
     $('stepGoal').textContent='本段目標 '+s.target+' g';
     if(running){
       announce('',i);
@@ -1229,6 +1321,7 @@ function loop(){
   // 節拍器
   const lv=liveTarget(t,i);
   $('liveG').innerHTML=lv+'<small> g</small>';
+  $('pWater').innerHTML=`<b>${lv}</b> / ${P.total} g`;
   const frac=clamp(lv/P.total,0,1);
   $('ring').style.strokeDashoffset=RING_LEN*(1-frac);
   $('ring').style.stroke=done?'var(--ok)':(s.pour?'var(--crema)':'var(--water)');
@@ -1264,6 +1357,15 @@ function renderNext(i,t){
   $('nextFlow').textContent=nx.flow&&nx.flow!=='—'?nx.flow:'';
 }
 
+/* 這杯在「瞄準」什麼味道。完成後對照實際喝到的結果，才知道參數要往哪邊修。 */
+const TARGET_LABEL={'-2':'明亮果酸 · 乾淨清爽','-1':'偏亮 · 輕盈','0':'酸甜平衡','1':'偏甜 · 圓潤','2':'甜厚飽滿 · 低酸刺激'};
+function flavorTarget(){
+  const bits=[`${ROASTS[S.roast].name}・${ORIGINS[S.origin].name.split('（')[0]}`,
+              `1:${P.ratio}`,`${P.temp}°C`,`前段 ${P.front} g/s`];
+  if(P.gc)bits.push(`${P.gc.clicks} 刻度`);
+  return {label:TARGET_LABEL[String(S.tweak)]||'酸甜平衡',detail:bits.join(' · ')};
+}
+
 /* 預覽頁：把運算結果攤成一份可以慢慢看完的流程表。
    導航頁的每個數字都只在「需要用到的那一秒」才出現，開始之前需要一個能從頭讀到尾的地方。 */
 function renderPreview(){
@@ -1293,7 +1395,10 @@ function renderPreview(){
   }).join('');
 }
 
+/* 全局藍圖現在住在預覽頁，導航頁已經沒有這塊。保留函式並在元素不存在時直接退出，
+   這樣舊的呼叫點不必逐一拆掉，也不會在沖煮途中丟例外。 */
 function renderStrip(cur,t){
+  if(!$('strip'))return;
   $('strip').innerHTML=P.steps.filter(s=>s.pour||/濾乾|品嚐|完成|取下/.test(s.action)).map(s=>{
     const idx=P.steps.indexOf(s);
     const cls=idx===cur?'now':(t>=s.end?'past':'');
@@ -1358,11 +1463,13 @@ $('resetBtn').onclick=()=>{
   running=false;clearInterval(tick);pausedAt=0;lastIdx=-1;announced5=false;
   try{TTS()&&TTS().cancel();}catch(e){}
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
-  $('finishBox').style.display='none';
+  $('finishBox').classList.remove('show');
   brewSecs=0;verdict='';
   [...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
+  $('fsAdjust').classList.remove('show');
   loop();
 };
+$('fsClose').onclick=()=>$('finishBox').classList.remove('show');
 /* ============================================================
    三頁路由：設定 → 預覽 → 導航
    接上瀏覽器歷史，iPhone 從螢幕左緣滑回才會是「回上一頁」，
@@ -1373,8 +1480,11 @@ let curView='setup';
 function leaveBrew(){stopCountdown();running=false;clearInterval(tick);releaseWake();}
 function showView(v){
   if(!VIEWS[v])v='setup';
-  if(curView==='brew'&&v!=='brew')leaveBrew();   // 離開導航頁一定要停表與放掉螢幕恆亮
-  Object.entries(VIEWS).forEach(([k,id])=>{$(id).style.display = k===v?'block':'none';});
+  if(curView==='brew'&&v!=='brew'){
+    leaveBrew();                                 // 離開導航頁一定要停表與放掉螢幕恆亮
+    $('finishBox').classList.remove('show');     // 完成面板是覆蓋層，換頁時要收掉
+  }
+  Object.entries(VIEWS).forEach(([k,id])=>{$(id).classList.toggle('hide',k!==v);});
   curView=v;window.scrollTo(0,0);
 }
 function nav(v){ if(v===curView)return; showView(v); history.pushState({view:v},''); }
@@ -1383,13 +1493,22 @@ window.addEventListener('popstate',e=>showView(e.state&&e.state.view));
 
 $('goBrew').onclick=()=>{calc();renderPreview();nav('preview');};
 $('pvBack').onclick=()=>history.back();
-$('pvStart').onclick=()=>{nav('brew');$('resetBtn').onclick();};
+$('pvStart').onclick=()=>{
+  /* 手法與關鍵參數放在導航頁頂端：沖的時候要知道自己在沖什麼、目標多少水 */
+  /* 只取括號前的短名：沖的時候不需要「（Tetsu Kasuya · 世界冠軍）」這截，留著只會被切掉 */
+  $('bwName').textContent=(MX[S.master]||MASTERS.threepour).name.split('（')[0];
+  $('bwSub').textContent=`${S.dose}g · 1:${P.ratio} · ${P.total}g · ${P.coolTemp?`${P.temp}→${P.coolTemp}`:P.temp}°C`;
+  nav('brew');$('resetBtn').onclick();
+};
 $('backBtn').onclick=()=>history.back();
 
 function finishBrew(){
   running=false;clearInterval(tick);
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
-  $('finishBox').style.display='block';
+  const ft=flavorTarget();
+  $('fsTarget').textContent=ft.label;
+  $('fsTargetDetail').textContent=ft.detail;
+  $('finishBox').classList.add('show');
   /* 記下實際跑完的總秒數 —— 這是校準研磨度唯一可靠的客觀數字 */
   brewSecs=Math.round(elapsed())||P.plan;
   $('secsChip').textContent=fmt(brewSecs);
@@ -1485,7 +1604,7 @@ function renderVoicePicker(){
   sel.innerHTML=vs.map(v=>`<option value="${v.name}">${v.name}（${v.lang}）</option>`).join('');
   if(zhVoice)sel.value=zhVoice.name;
 }
-if(TTS()){pickVoice();TTS().addEventListener?.('voiceschanged',pickVoice);}
+if(TTS()){pickVoice();TTS().addEventListener?.('voiceschanged',()=>{pickVoice();renderVoiceHint();});}
 
 /* queue=true 代表接續播報，不打斷前一句（用於「目標＋流速」的補充說明） */
 function speak(txt,queue){
@@ -1530,8 +1649,10 @@ $('voiceSel').addEventListener('change',()=>{
 });
 $('voiceTest').onclick=()=>speak('準備，第二刀，五十元硬幣繞圈，注到 180 克，這段加 120 克，流速每秒 4 到 5 克');
 
-/* 若系統只裝了精簡版嗓音，提示使用者可下載音質更好的版本 */
-(function(){
+/* 若系統只裝了精簡版嗓音，提示使用者可下載音質更好的版本。
+   ── 必須在 voiceschanged 之後重算：iOS 的 getVoices() 初次呼叫回傳空陣列，
+      只跑一次的話，嗓音清單明明已經載入，提示卻會一直卡在「未提供中文語音」。 */
+function renderVoiceHint(){
   const box=$('voiceHint'); if(!box)return;
   const iOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const vs=zhVoices();
@@ -1541,7 +1662,8 @@ $('voiceTest').onclick=()=>speak('準備，第二刀，五十元硬幣繞圈，�
   box.innerHTML = iOS
     ? '目前只有系統精簡版嗓音（機器音）。到 <b>設定 → 輔助使用 → 朗讀內容 → 語音 → 中文（台灣）</b> 下載「美嘉（進階）」後，回到這裡即可選用，音質差異非常大。'
     : '目前只有系統預設嗓音。安裝作業系統的中文進階語音套件後，這裡就會出現音質更好的選項。';
-})();
+}
+renderVoiceHint();
 $('tglBuzz').onclick=e=>{buzzOn=!buzzOn;e.target.classList.toggle('on',buzzOn);};
 $('tglWake').onclick=async e=>{
   wantWake=!wantWake;e.target.classList.toggle('on',wantWake);
@@ -1576,7 +1698,7 @@ function applySettings(d,silent){
   if(d.latteStrength)$('latteStrength').value=d.latteStrength;
   if(d.milkRatio)$('milkRatio').value=d.milkRatio;
   if(d.icePct)$('icePct').value=d.icePct;
-  [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===S.dose));
+  syncDoseChips();
   calc();
   if(!silent)toast('已載入該次沖煮參數');
   return true;
@@ -1694,6 +1816,20 @@ $('stars').addEventListener('click',e=>{
 $('verdictRow').addEventListener('click',e=>{
   const v=e.target.dataset.v;if(!v)return;verdict=v;
   [...$('verdictRow').children].forEach(c=>c.classList.toggle('on',c.dataset.v===v));
+  /* 當場回饋：選完偏哪一邊，立刻告訴他下一杯要怎麼改，不必等回設定頁才看到 */
+  const c=calibrate({verdict:v,secs:brewSecs,plan:P.plan});
+  const box=$('fsAdjust');
+  if(!c){box.classList.remove('show');return;}
+  let line='';
+  if(P.gc&&c.dir){
+    const amt=c.half?Math.max(1,Math.round(P.gc.step/2)):P.gc.step;
+    const to=clamp(P.gc.clicks+c.dir*amt,P.gc.min,P.gc.max);
+    line = to===P.gc.clicks
+      ? `<br>⚠ 磨豆機已經到範圍邊界（${P.gc.clicks} 刻度），這個方向轉不動了。`
+      : `<br>👉 下一杯磨豆機<b>從 ${P.gc.clicks} 轉到 ${to} 刻度</b>。`;
+  }
+  box.innerHTML=`<b>${c.t}。</b><br>${c.b}${line}`;
+  box.classList.add('show');
 });
 /* 計時器只到「最後一段結束」，實際滴完常常晚幾十秒，所以留一個手動修正 */
 $('secsEdit').onclick=()=>{
@@ -1731,21 +1867,34 @@ $('roast').value=S.roast;$('process').value=S.process;$('origin').value=S.origin
 $('dripper').value=S.dripper;$('master').value=S.master;
 
 // 粉量快速鍵
+/* 設定粉量的單一入口：數字欄、快捷鍵、濾掛自動調整與還原都走這裡 */
+let doseBeforeDripbag=null;
+function syncDoseChips(){[...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===S.dose));}
+function setDose(g){S.dose=clamp(+g||20,8,40);$('dose').value=S.dose;syncDoseChips();}
 $('doseChips').innerHTML=[12,20,30,40].map(g=>`<span class="chip${g===20?' on':''}" data-g="${g}">${g}g</span>`).join('');
 $('doseChips').addEventListener('click',e=>{
   const g=+e.target.dataset.g;if(!g)return;
-  S.dose=g;$('dose').value=g;
-  [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===g));
-  calc();
+  setDose(g);doseBeforeDripbag=null;calc();     // 手動改過就不再自動還原
 });
-$('dose').addEventListener('input',()=>{S.dose=clamp(+$('dose').value||20,8,40);[...$('doseChips').children].forEach(c=>c.classList.remove('on'));calc();});
+$('dose').addEventListener('input',()=>{
+  /* 這裡刻意不回寫欄位：打字打到一半的「1」會被夾成 8，就再也輸入不了 12 */
+  S.dose=clamp(+$('dose').value||20,8,40);
+  syncDoseChips();doseBeforeDripbag=null;calc();
+});
 ['roast','process','origin','dripper','master'].forEach(k=>$(k).addEventListener('change',()=>{
   S[k]=$(k).value;
-  // 濾掛掛耳市售規格多為 10–12g，粉量過大會塞爆掛耳，自動修正
-  if(k==='master'&&S.master==='dripbag'&&S.dose>15){
-    S.dose=12;$('dose').value=12;
-    [...$('doseChips').children].forEach(c=>c.classList.toggle('on',+c.dataset.g===12));
-    toast('已將粉量調整為濾掛典型的 12g');
+  /* 濾掛掛耳市售規格多為 10–12g，粉量過大會塞爆掛耳，所以自動降到 12g。
+     但離開濾掛時一定要還原 —— 否則點進去看一眼再切回三刀流，
+     就會在毫無提示的情況下用 12g 沖，而進去時的那則 toast 早就消失了。
+     只有在使用者沒有自己動過粉量（仍是 12g）時才還原。 */
+  if(k==='master'){
+    if(S.master==='dripbag'&&S.dose>15){
+      doseBeforeDripbag=S.dose;setDose(12);
+      toast('已將粉量調整為濾掛典型的 12g');
+    }else if(S.master!=='dripbag'&&doseBeforeDripbag!==null){
+      const back=doseBeforeDripbag;doseBeforeDripbag=null;
+      if(S.dose===12){setDose(back);toast(`已把粉量還原為 ${back}g`);}
+    }
   }
   calc();
 }));
