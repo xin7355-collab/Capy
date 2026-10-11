@@ -133,9 +133,10 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .pacer .live small:empty{display:none}
 .pacer .cap{font-size:.68rem;color:var(--muted);margin-top:5px}
 .pacer .goal{font-family:var(--mono);font-size:.85rem;color:var(--water);margin-top:2px}
-.timer{text-align:center;font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--muted)}
-.timer.run{color:var(--text)}
-.timer.done{color:var(--ok)}
+/* 流速與目標上下相鄰、同為等寬字，不換色會讀成一塊；金色與圓弧同色＝「現在正在注的這一下」 */
+.pacer .flow{display:flex;align-items:baseline;justify-content:center;gap:5px;margin-top:4px;line-height:1.15}
+.pacer .flow .fl{font-size:.6rem;color:var(--muted)}
+.pacer .flow .fv{font-family:var(--mono);font-size:.95rem;font-weight:800;color:var(--crema)}
 /* ---- 預覽頁：按下開始之前，先把整杯從頭到尾讀一遍 ---- */
 .pvstep{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
 .pvstep:last-child{border-bottom:0}
@@ -164,8 +165,6 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .action-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px}
 .action-box .tag{font-size:.65rem;color:var(--crema);font-weight:700;letter-spacing:.15em}
 .action-box .act{font-size:1.1rem;font-weight:800;margin-top:4px}
-.flowline{display:flex;justify-content:space-between;align-items:center;background:rgba(127,180,214,.07);border:1px solid rgba(127,180,214,.2);border-radius:12px;padding:11px 14px;margin-top:10px}
-.flowline .fv{font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--water)}
 .tip{display:flex;gap:9px;background:var(--panel2);border-radius:12px;padding:11px;margin-top:10px;font-size:.8rem;color:var(--muted);line-height:1.6}
 .tip::before{content:"💡";flex-shrink:0}
 
@@ -200,23 +199,40 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .prow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.66rem;color:var(--muted);flex-shrink:0}
 .prow b{color:var(--water);font-weight:700}
 
-.btime{display:flex;align-items:baseline;justify-content:center;gap:12px;flex-shrink:0}
+.btime{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;flex-shrink:0}
 .btime .el{font-family:var(--mono);font-size:1.75rem;font-weight:800;color:var(--muted)}
 .btime .el.run{color:var(--text)}.btime .el.done{color:var(--ok)}
 
 .pacerwrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
 /* 圓環吃掉版面剩下的空間：大螢幕放大、小螢幕縮小以保留底部按鈕的餘裕 */
-.wrap.brew .pacer{width:min(320px,100%,36vh);height:min(320px,100%,36vh);margin:0}
+.wrap.brew .pacer{width:min(420px,100%,46vh);height:min(420px,100%,46vh);margin:0}
 .wrap.brew .pacer svg{width:100%;height:100%}
 .wrap.brew .pacer .live{font-size:clamp(2.2rem,11vw,3.4rem)}
+/* 圓環大小跟著「高度」走，字級若跟著「寬度」走，兩者會脫鉤 —— 矮視窗（Safari 分頁）
+   就會出現圓環縮小、字沒跟著縮而被圓弧裁掉。改用容器單位之後，字永遠是圓環直徑的
+   固定百分比，「會不會被裁」變成與螢幕尺寸無關的性質。iOS 15 以下退回上面的 vw 版本。
+   必須放在 .wrap.brew .pacer .live 之後：同權重時後出現者勝。 */
+.wrap.brew .pacer{container-type:size}
+@supports (container-type:size){
+  .wrap.brew .pacer .cap{font-size:clamp(.6rem,5cqmin,.9rem)}
+  .wrap.brew .pacer .live{font-size:clamp(1.5rem,19cqmin,4.4rem)}
+  .wrap.brew .pacer .live small{font-size:.28em}
+  .wrap.brew .pacer .goal{font-size:clamp(.74rem,6.4cqmin,1.25rem);line-height:1.4}
+  .wrap.brew .pacer .flow .fl{font-size:clamp(.58rem,4.8cqmin,.86rem)}
+  .wrap.brew .pacer .flow .fv{font-size:clamp(.8rem,7.4cqmin,1.45rem)}
+}
+.wrap.brew .btime .el{font-size:clamp(1.75rem,4.3vh,2.3rem)}
+.wrap.brew .steprem{font-size:clamp(.78rem,1.65vh,1rem)}
+.wrap.brew .prow{font-size:clamp(.66rem,1.35vh,.78rem)}
 .wrap.brew .action-box{margin-top:0;padding:11px 13px;flex-shrink:0}
-.wrap.brew .action-box .act{font-size:1rem}
-.wrap.brew .action-box .sub{font-size:.7rem;color:var(--muted);line-height:1.5;margin-top:5px}
-.wrap.brew .flowline,.wrap.brew .nextline{margin-top:0;flex-shrink:0}
-.wrap.brew .flowline{padding:8px 13px}
+.wrap.brew .action-box .act{font-size:clamp(1rem,2.1vh,1.2rem)}
+.wrap.brew .action-box .sub{font-size:clamp(.7rem,1.45vh,.82rem);color:var(--muted);line-height:1.5;margin-top:5px}
+.wrap.brew .nextline{margin-top:0;flex-shrink:0}
+.wrap.brew .nextline .body{font-size:clamp(.72rem,1.5vh,.84rem)}
+.wrap.brew .nextline .nf{font-size:clamp(.92rem,1.95vh,1.1rem)}
 .wrap.brew .ctrl{margin:2px 0 0;gap:18px;flex-shrink:0}
-.wrap.brew .btn-round{width:56px;height:56px;font-size:.8rem}
-.wrap.brew .btn-play{width:78px;height:78px;font-size:1rem}
+.wrap.brew .btn-round{width:clamp(56px,7.4vh,66px);height:clamp(56px,7.4vh,66px);font-size:.82rem}
+.wrap.brew .btn-play{width:clamp(78px,10.4vh,92px);height:clamp(78px,10.4vh,92px);font-size:clamp(1rem,2.1vh,1.15rem)}
 
 /* 完成後的評鑑表：導航頁不捲，所以完成畫面改成覆蓋整頁的獨立面板 */
 .fsheet{position:fixed;inset:0;z-index:60;background:rgba(18,13,10,.95);display:none;
@@ -231,18 +247,6 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .adjust{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;
   margin-top:10px;font-size:.76rem;line-height:1.65;text-align:left;display:none}
 .adjust.show{display:block}
-
-/* 全局藍圖橫條 */
-.strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-top:10px}
-.strip::-webkit-scrollbar{height:5px}
-.strip::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
-.seg{flex-shrink:0;width:118px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px}
-.seg.now{border-color:var(--crema);background:rgba(216,155,90,.12)}
-.seg.past{opacity:.4}
-.seg .t{font-family:var(--mono);font-size:.66rem;color:var(--muted)}
-.seg .g{font-family:var(--mono);font-weight:800;font-size:.95rem;margin:2px 0}
-.seg .a{font-size:.64rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.seg .f{font-family:var(--mono);font-size:.62rem;color:var(--water);margin-top:3px}
 
 /* 下一段預告：讓流速在需要用到之前就先讀得到，不用等段落開始才臨時看 */
 .nextline{display:flex;align-items:center;gap:10px;background:rgba(216,155,90,.06);border:1px dashed rgba(216,155,90,.32);border-radius:12px;padding:9px 13px;margin-top:8px}
@@ -315,6 +319,17 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 /* 空的資訊框不要留下一個空殼 */
 .reco:empty{display:none}
 .reco.clamp{--clampbg:#242220}
+/* ---- 兩指放大鏡 ---- */
+/* manipulation 去掉雙擊縮放與點擊延遲。刻意不用 none —— 那會干擾 iPhone 從左緣滑回。 */
+.wrap,.fsheet{touch-action:manipulation}
+/* 回彈的過渡只在放手那一刻掛上，220ms 後拆掉；手指還在螢幕上時不能有它，否則追蹤會延遲。
+   不用 !important 去蓋下面那條 reduce-motion —— 那是使用者在系統層表達的偏好，
+   而且復原邏輯本來就不依賴 transitionend，沒有動畫只是少了平滑感，狀態照樣正確。 */
+.zrelease{transition:transform .18s ease-out}
+/* 放大期間把固定在底部的主按鈕藏起來：祖先一旦有 transform，fixed 的定位基準就變成
+   那個祖先，按鈕會被推到長頁面的底部（螢幕外）。放大是為了看清楚，不是為了按它。 */
+.zooming .dock{visibility:hidden}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -694,6 +709,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 
   <div class="btime">
     <span class="el" id="timer">00:00</span>
+    <div class="steprem" id="stepRem">本段剩餘 --</div>
   </div>
 
   <!-- 招牌黑科技：即時注水節拍器 -->
@@ -707,7 +723,8 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <div class="cap">秤上現在應到</div>
         <div class="live" id="liveG">0<small> g</small></div>
         <div class="goal" id="stepGoal">本段目標 -- g</div>
-        <div class="steprem" id="stepRem">本段剩餘 --</div>
+        <!-- 流速沿用原本的 id：loop() 第一次換段就會寫它，id 打錯會讓整個 loop 拋例外 -->
+        <div class="flow"><span class="fl">流速</span><span class="fv" id="flowText">--</span></div>
       </div>
     </div>
   </div>
@@ -717,7 +734,6 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <div class="act" id="actText">按下開始，跟著指針倒水</div>
     <div class="sub" id="tipText"></div>
   </div>
-  <div class="flowline"><span style="font-size:.78rem;color:var(--muted)">建議流速</span><span class="fv" id="flowText">--</span></div>
   <div class="nextline" id="nextLine">
     <span class="lbl">下一段</span>
     <span class="body" id="nextText">—</span>
@@ -1386,7 +1402,6 @@ function loop(){
       announce('',i);
       buzz([80,60,80]);beep(s.pour?880:520);
     }
-    renderStrip(i,t);
   }
   // 段末 10 秒先報下一段：流速要在需要用到之前就聽得到，不是同時
   if(running&&!announced5&&i<P.steps.length-1&&s.end-t<=10){
@@ -1473,18 +1488,6 @@ function renderPreview(){
   }).join('');
 }
 
-/* 全局藍圖現在住在預覽頁，導航頁已經沒有這塊。保留函式並在元素不存在時直接退出，
-   這樣舊的呼叫點不必逐一拆掉，也不會在沖煮途中丟例外。 */
-function renderStrip(cur,t){
-  if(!$('strip'))return;
-  $('strip').innerHTML=P.steps.filter(s=>s.pour||/濾乾|品嚐|完成|取下/.test(s.action)).map(s=>{
-    const idx=P.steps.indexOf(s);
-    const cls=idx===cur?'now':(t>=s.end?'past':'');
-    const flow=s.pour&&s.flow&&s.flow!=='—'?`<div class="f">${s.flow}</div>`:'';
-    return `<div class="seg ${cls}"><div class="t">${fmt(s.start)}</div><div class="g">${s.target}g</div><div class="a">${s.action.replace(/【.*?】/,'')}</div>${flow}</div>`;
-  }).join('');
-}
-
 /* ---- 控制 ---- */
 let cdTimer=null;
 
@@ -1557,7 +1560,7 @@ $('fsClose').onclick=()=>$('finishBox').classList.remove('show');
    ============================================================ */
 const VIEWS={setup:'setupPage',settings:'settingsPage',preview:'previewPage',brew:'brewPage'};
 let curView='setup';
-function leaveBrew(){stopCountdown();running=false;clearInterval(tick);releaseWake();}
+function leaveBrew(){stopCountdown();running=false;clearInterval(tick);releaseWake();resetZoom();}
 function showView(v){
   if(!VIEWS[v])v='setup';
   if(curView==='brew'&&v!=='brew'){
@@ -1565,6 +1568,7 @@ function showView(v){
     $('finishBox').classList.remove('show');     // 完成面板是覆蓋層，換頁時要收掉
     setTimeout(applyUpdate,0);                   // 沖煮中擱置的版本更新，離開後才套用
   }
+  resetZoom();                                   // 不要帶著放大的 transform 換頁
   Object.entries(VIEWS).forEach(([k,id])=>{$(id).classList.toggle('hide',k!==v);});
   curView=v;window.scrollTo(0,0);
 }
@@ -1581,7 +1585,7 @@ $('pvStart').onclick=()=>{
   /* 只取括號前的短名：沖的時候不需要「（Tetsu Kasuya · 世界冠軍）」這截，留著只會被切掉 */
   $('bwName').textContent=(MX[S.master]||MASTERS.threepour).name.split('（')[0];
   $('bwSub').textContent=`${S.dose}g · 1:${P.ratio} · ${P.total}g · ${P.coolTemp?`${P.temp}→${P.coolTemp}`:P.temp}°C`;
-  nav('brew');$('resetBtn').onclick();
+  nav('brew');$('resetBtn').onclick();hintZoom();
 };
 $('backBtn').onclick=()=>history.back();
 
@@ -1848,14 +1852,120 @@ $('tglWake').onclick=async e=>{
    刻意與沖煮參數快照分開存：那份快照會被日誌的「一鍵沿用」整包還原，
    提示偏好不該被某一杯的紀錄帶著走。 */
 const PREF_KEY='dripmatrix_pref_v1';
-function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({buzz:buzzOn,wake:wantWake}));}catch(e){}}
+let zoomHinted=false;
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify({buzz:buzzOn,wake:wantWake,zhint:zoomHinted}));}catch(e){}}
 (function loadPrefs(){
   try{const d=JSON.parse(localStorage.getItem(PREF_KEY)||'null');
-    if(d){buzzOn=d.buzz!==false;wantWake=!!d.wake;}
+    if(d){buzzOn=d.buzz!==false;wantWake=!!d.wake;zoomHinted=!!d.zhint;}
   }catch(e){}
   $('tglBuzz').classList.toggle('on',buzzOn);
   $('tglWake').classList.toggle('on',wantWake);
 })();
+
+/* ============================================================
+   兩指放大鏡：撐開放大、手一鬆就恢復
+
+   導航頁不能捲動、字也只能做到這麼大，所以留一個「臨時看清楚」的手段。
+   刻意做成按著才放大：不留狀態就不可能卡在放大狀態回不來，
+   也不需要再給一個「復原」按鈕佔版面。
+   ============================================================ */
+const Z_MAX=1.75;          // 再大就只剩一兩個字在畫面上
+const Z_DEAD=1.06;         // 兩指不小心同時碰到螢幕時不要抖動
+const Z_WATCHDOG=6000;     // 漏接放手事件的保險
+const zs={el:null,d0:0,on:false,raf:0,wd:0,cls:0,endAt:0,ids:null};
+
+function zoomTarget(){
+  // 完成評鑑表是覆蓋在最上層的獨立面板，它開著的時候要放大的是它
+  if($('finishBox').classList.contains('show'))return $('finishBox');
+  return $(VIEWS[curView])||null;
+}
+const zDist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+
+/* 幂等：任何一條復原路徑都呼叫這一個，重複呼叫無害 */
+function resetZoom(){
+  clearTimeout(zs.wd);cancelAnimationFrame(zs.raf);
+  const el=zs.el;
+  zs.on=false;zs.d0=0;zs.el=null;zs.ids=null;
+  if(!el)return;
+  zs.endAt=Date.now();
+  el.classList.add('zrelease');el.classList.remove('zooming');
+  el.style.transform='';el.style.transformOrigin='';
+  clearTimeout(zs.cls);
+  zs.cls=setTimeout(()=>el.classList.remove('zrelease'),220);
+}
+
+function zApply(k){
+  cancelAnimationFrame(zs.raf);
+  zs.raf=requestAnimationFrame(()=>{
+    if(zs.el)zs.el.style.transform='scale('+k.toFixed(3)+')';
+  });
+}
+
+document.addEventListener('touchstart',e=>{
+  if(e.touches.length<2){
+    // 狀態不一致（例如漏接了放手）就先清乾淨，別讓單指點擊踩到殘留的 transform
+    if(zs.on&&e.touches.length<=1)resetZoom();
+    return;
+  }
+  const el=zoomTarget(); if(!el)return;
+  const [a,b]=[e.touches[0],e.touches[1]];
+  zs.el=el;zs.ids=[a.identifier,b.identifier];zs.d0=zDist(a,b);zs.on=false;
+  el.classList.remove('zrelease');
+  /* 原點跟兩指中點，但只在這裡取一次 —— 手勢中途改 origin 會整個畫面跳動。
+     夾在 15%~85%：在螢幕邊緣開手勢時才不會把內容直接推出畫面外。 */
+  const r=el.getBoundingClientRect();
+  const cx=clamp(((a.clientX+b.clientX)/2-r.left)/Math.max(1,r.width)*100,15,85);
+  const cy=clamp(((a.clientY+b.clientY)/2-r.top)/Math.max(1,r.height)*100,15,85);
+  el.style.transformOrigin=cx.toFixed(1)+'% '+cy.toFixed(1)+'%';
+  clearTimeout(zs.wd);zs.wd=setTimeout(resetZoom,Z_WATCHDOG);
+},{passive:true});
+
+document.addEventListener('touchmove',e=>{
+  if(!zs.d0||e.touches.length<2)return;
+  // 鎖定最初那兩指：第三指進來不該改變基準
+  let a=null,b=null;
+  for(const t of e.touches){ if(t.identifier===zs.ids[0])a=t; else if(t.identifier===zs.ids[1])b=t; }
+  if(!a||!b)return;
+  /* 只有兩指時才攔截。對單指事件 preventDefault 會讓 iOS 不再產生合成 click，
+     所有按鈕當場失效 —— 這是這段程式最容易踩的地雷。 */
+  e.preventDefault();
+  clearTimeout(zs.wd);zs.wd=setTimeout(resetZoom,Z_WATCHDOG);
+  const ratio=zDist(a,b)/zs.d0;
+  if(!zs.on){
+    if(ratio<Z_DEAD)return;
+    zs.on=true;zs.el.classList.add('zooming');
+  }
+  zApply(Math.min(Z_MAX,Math.max(1,ratio)));
+},{passive:false});
+
+const zEnd=e=>{ if(e.touches.length<2&&(zs.d0||zs.on))resetZoom(); };
+document.addEventListener('touchend',zEnd,{passive:true});
+document.addEventListener('touchcancel',zEnd,{passive:true});
+
+/* 手勢結束時最後一指離開會生出一個合成 click，剛好落在「開始」或「歸零」上就會誤觸計時。
+   capture 階段先攔下來：頁內按鈕都是 bubble 階段的 onclick，攔得到。 */
+document.addEventListener('click',e=>{
+  if(zs.endAt&&Date.now()-zs.endAt<400){e.stopPropagation();e.preventDefault();}
+},true);
+
+/* iOS Safari 分頁會忽略 user-scalable=no。不擋原生縮放的話會變成「原生 ＋ 我們的」疊兩倍，
+   而且使用者得用原生 pinch 才縮得回去 —— 那就是看起來卡住的主因。
+   standalone 沒有原生縮放，這幾行無害，兩個情境於是收斂成同一個行為。 */
+['gesturestart','gesturechange','gestureend'].forEach(ev=>
+  document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+
+// 漏接放手事件的其餘情境：切到背景、來電橫幅、切換 App
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')resetZoom();});
+window.addEventListener('pagehide',resetZoom);
+window.addEventListener('blur',resetZoom);
+
+/* 使用者看不到程式，不會知道有這個手勢，提示一次就好。
+   放在進入導航頁時、按下開始之前，才不會跟倒數的嗶聲撞在一起。 */
+function hintZoom(){
+  if(zoomHinted||!('ontouchstart'in window))return;
+  zoomHinted=true;savePrefs();
+  setTimeout(()=>toast('看不清楚時，兩指撐開可暫時放大'),700);
+}
 
 /* ============================================================
    沖煮日誌（localStorage，防呆 try/catch，上限 30 筆）
