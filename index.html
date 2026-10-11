@@ -85,6 +85,8 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .stat .v{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-top:2px}
 .stat .v.temp{color:var(--hot)}.stat .v.water{color:var(--water)}
 .stat .v.grind{font-size:.72rem;font-family:inherit;line-height:1.3;padding-top:5px;color:var(--text)}
+/* 換算成自己磨豆機刻度之後，數字要比文字描述更搶眼 —— 那才是手上真正要轉的東西 */
+.stat .v.grind .clicks{display:block;font-family:var(--mono);font-size:1.15rem;font-weight:800;color:var(--crema);margin-top:4px}
 .calc-log{font-size:.68rem;color:var(--muted);background:rgba(0,0,0,.3);border-radius:10px;padding:9px 11px;font-family:var(--mono);line-height:1.7}
 .calc-log b{color:var(--ok);font-weight:600}
 .reco{margin-top:10px;font-size:.75rem;background:rgba(127,180,214,.08);border:1px solid rgba(127,180,214,.25);border-radius:10px;padding:9px 11px;color:#bcd9ec}
@@ -125,6 +127,30 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .timer{text-align:center;font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--muted)}
 .timer.run{color:var(--text)}
 .timer.done{color:var(--ok)}
+/* ---- 預覽頁：按下開始之前，先把整杯從頭到尾讀一遍 ---- */
+.pvstep{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
+.pvstep:last-child{border-bottom:0}
+.pvstep .no2{flex-shrink:0;width:23px;height:23px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+  font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.pvstep.pour .no2{background:rgba(216,155,90,.14);border-color:var(--crema);color:var(--crema)}
+.pvstep .bd{flex:1;min-width:0}
+.pvstep .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pvstep .tm{font-family:var(--mono);font-size:.7rem;color:var(--muted);flex-shrink:0}
+.pvstep .nm{font-size:.85rem;font-weight:700;line-height:1.35}
+.pvstep .mt{font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--water)}
+.pvstep .fl{font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--crema)}
+.pvstep .tp{font-size:.7rem;color:var(--muted);margin-top:5px;line-height:1.55}
+.pvstep:not(.pour){opacity:.6}
+.pvsum{display:flex;justify-content:space-between;align-items:baseline;background:var(--panel2);border:1px solid var(--line);
+  border-radius:12px;padding:10px 14px;margin-top:12px;font-size:.74rem;color:var(--muted)}
+.pvsum b{font-family:var(--mono);font-size:1rem;color:var(--text);font-weight:800}
+
+/* 本段剩餘秒數：碼錶只告訴你過了多久，真正要追的是這一段還剩幾秒 */
+.steprem{text-align:center;font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--water);margin-top:3px;letter-spacing:.04em}
+.steprem.urgent{color:var(--hot);animation:rempulse .5s ease-in-out infinite alternate}
+.steprem.done{color:var(--ok);animation:none}
+@keyframes rempulse{from{opacity:.45}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.steprem.urgent{animation:none}}
 
 .action-box{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px}
 .action-box .tag{font-size:.65rem;color:var(--crema);font-weight:700;letter-spacing:.15em}
@@ -359,6 +385,27 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <div class="reco" id="milkBox" style="display:none"></div>
   </div>
 
+  <!-- 4b. 磨豆機刻度校正（可折疊） -->
+  <div class="card">
+    <details id="grinderCard">
+      <summary style="font-size:.95rem;color:var(--text);font-weight:700">我的磨豆機（設定後藍圖直接給刻度）</summary>
+      <div class="hint" style="margin-top:8px">
+        各家磨豆機的刻度與實際顆粒大小沒有通用換算，所以這裡不內建機型對照表 —— 填入<b>你自己這台</b>平常手沖會用到的最細與最粗刻度，
+        引擎就會把「中細」「調細一格」這種描述換算成你手上要轉到的數字。
+      </div>
+      <label>磨豆機名稱（選填，只是方便你辨認）</label>
+      <input type="text" id="grName" maxlength="24" placeholder="例：C40">
+      <div class="row2" style="margin-top:10px">
+        <div><label>手沖最細刻度</label><input type="number" id="grMin" min="0" max="999" step="1" placeholder="例 20" inputmode="numeric"></div>
+        <div><label>手沖最粗刻度</label><input type="number" id="grMax" min="0" max="999" step="1" placeholder="例 30" inputmode="numeric"></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn-mini" id="grClear">清除設定</button>
+      </div>
+      <div class="hint" id="grHint"></div>
+    </details>
+  </div>
+
   <!-- 5. 兌水降溫（可折疊） -->
   <div class="card">
     <details>
@@ -443,10 +490,39 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
   <div class="dock"><button class="btn-main" id="goBrew">☕ 進入大師導航模式</button></div>
 </div>
 
+<!-- ==================== 預覽頁 ====================
+     按下開始之前先把整杯讀完：參數、每一段要注到幾克、用什麼流速、總共多久。
+     導航頁的資訊都是「當下那一秒」才出現，開始前需要一個能慢慢看的地方。 -->
+<div id="previewPage" class="wrap" style="display:none">
+  <div class="topbar">
+    <button class="link" id="pvBack">← 改參數</button>
+    <div style="font-size:.72rem;color:var(--muted)">開始前先看一遍</div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:6px"><span class="no">✓</span><span id="pvName">—</span></h2>
+    <div class="stats">
+      <div class="stat"><div class="k">目標水溫</div><div class="v temp" id="pvTemp">--</div></div>
+      <div class="stat"><div class="k"><span id="pvWaterLabel">總水量 </span><span id="pvRatio"></span></div><div class="v water" id="pvWater">--</div></div>
+      <div class="stat"><div class="k">研磨度</div><div class="v grind" id="pvGrind">--</div></div>
+    </div>
+    <div id="pvWarn"></div>
+    <div class="pvsum"><span>預估總時間</span><b id="pvTotal">--</b></div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:2px"><span class="no">⟐</span>完整沖煮流程</h2>
+    <div class="hint" style="margin-bottom:4px">灰色的是等待段，不用注水。</div>
+    <div id="pvSteps"></div>
+  </div>
+
+  <div class="dock"><button class="btn-main" id="pvStart">▶ 開始沖煮</button></div>
+</div>
+
 <!-- ==================== 沖煮頁 ==================== -->
 <div id="brewPage" class="wrap">
   <div class="topbar">
-    <button class="link" id="backBtn">← 重新設定</button>
+    <button class="link" id="backBtn">← 回預覽</button>
     <div class="toggles">
       <button class="tgl on" id="tglVoice">🔊 語音</button>
       <button class="tgl on" id="tglBuzz">📳 震動</button>
@@ -464,6 +540,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <div class="hint" id="voiceHint"></div>
     </div>
     <div class="timer" id="timer">00:00</div>
+    <div class="steprem" id="stepRem">本段剩餘 --</div>
 
     <!-- 招牌黑科技：即時注水節拍器 -->
     <div class="pacer">
@@ -538,6 +615,18 @@ const ROASTS = {
   'med-dark':   {name:'中深焙',baseTemp:87,grind:'中粗（粗鹽偏細）',baseRatio:14},
   'dark':       {name:'深 / 極深焙',baseTemp:84,grind:'中粗（粗鹽）',baseRatio:13},
 };
+
+/* ============================================================
+   研磨粗細的數值化（0＝手沖最細端，1＝手沖最粗端）
+   ── 另開一張表而不是改 ROASTS / MASTERS 的 grind 文字，
+      是因為那些文字是配方的一部分，不動它才不會改到既有行為。
+   ── 這組數值只負責換算成「你自己磨豆機上的刻度」，
+      所以不內建任何機型對照表：各家刻度與微米的關係我無從驗證，
+      由使用者輸入自己磨豆機的手沖範圍才是唯一準確的做法。
+   ============================================================ */
+const ROAST_COARSE={'ultra-light':0.20,'light':0.35,'medium':0.50,'med-dark':0.62,'dark':0.72};
+const MASTER_COARSE={tetsu46:0.92,matsuya:0.92,clever:0.72,hoffmann:0.25,latte:0.10};  // 手法自帶研磨度時的絕對值
+const MASTER_COARSE_DELTA={iced:-0.06,rao:-0.06};                                      // 相對烘焙度基準微調
 const PROCESSES = {
   'washed':   {name:'水洗 / 高海拔（Level 1 極難萃取）',tempMod:+1,note:'細胞壁堅硬完整，需高溫＋較強水柱攪拌。',flow:'加大水柱攪拌'},
   'natural':  {name:'日曬 / 蜜處理（Level 2 正常萃取）',tempMod:0, note:'維持基礎水溫、標準繞圈即可。',flow:'標準繞圈'},
@@ -622,8 +711,27 @@ function fillSelect(sel,db){
 /* ============================================================
    核心運算引擎
    ============================================================ */
-const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null };
+const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null, grinder:null };
 let P = null; // 最新運算結果
+
+/* 把文字研磨度換算成使用者磨豆機上的刻度。
+   未設定磨豆機、或濾掛這種預磨無法調整的情況回傳 null。
+   step＝一「格」等於幾刻度，校準建議會用它把「調細一格」講成實際轉幾格。 */
+function grindClicks(){
+  const g=S.grinder;
+  if(!g||S.master==='dripbag')return null;
+  const span=g.max-g.min;
+  if(!(span>0))return null;
+  const mst=MX[S.master]||MASTERS.threepour;
+  let c=MASTER_COARSE[S.master];
+  if(c===undefined)c=ROAST_COARSE[S.roast]+(MASTER_COARSE_DELTA[S.master]||0);
+  if(S.master==='latte'&&S.dose>=30)c=0.35;        // 粉層過厚時強制回到中細，與文字敘述一致
+  if(!mst.grind&&DRIPPERS[S.dripper]?.grindNote)c-=0.07;  // 流速極快的濾杯要再細一點
+  const step=Math.max(1,Math.round(span/10));
+  /* 滑桿往「甜」推＝研磨調細＝刻度數字變小 */
+  const clicks=clamp(Math.round(g.min+c*span-S.tweak*step),g.min,g.max);
+  return {clicks,step,min:g.min,max:g.max,name:g.name||''};
+}
 
 function calc(){
   const base=ROASTS[S.roast], proc=PROCESSES[S.process], orig=ORIGINS[S.origin], drp=DRIPPERS[S.dripper];
@@ -743,6 +851,7 @@ function calc(){
     if(S.tweak>0)grind+='（微調細 1 格增甜）';
     if(S.tweak<0)grind+='（微調粗 1 格增亮）';
   }
+  const gc=grindClicks();
 
   // 7) 產生步驟（含等待滴乾，時間軸自動生成）
   const steps=buildSteps(total,milk,bypass);
@@ -750,7 +859,7 @@ function calc(){
   logs.push(`前段流速 ${frontRate()} g/s（${S.tweak>0?'放慢拉長攪拌走甜厚':S.tweak<0?'加快大水柱走酸亮':'中性基準'}）`);
 
   P={temp,ratio,total,grind,steps,logs,milk,iced,bypass,warns,flowNote:proc.flow,
-     front:frontRate(),coolTemp:mst.coolTo||null,plan:steps.length?steps[steps.length-1].end:0,ratioOwned};
+     front:frontRate(),coolTemp:mst.coolTo||null,plan:steps.length?steps[steps.length-1].end:0,ratioOwned,gc};
   renderBlueprint();
   saveSettings();
 }
@@ -948,7 +1057,13 @@ function renderBlueprint(){
   $('outTemp').textContent=P.coolTemp?`${P.temp}→${P.coolTemp}°C`:P.temp+'°C';
   $('outWater').textContent=P.total+'g';
   $('outRatio').textContent='1:'+P.ratio;
-  $('outGrind').textContent=P.grind;
+  $('outGrind').innerHTML=P.gc
+    ? `${esc(P.grind)}<span class="clicks">${P.gc.clicks} 刻度</span>`
+    : esc(P.grind);
+  $('grHint').innerHTML = P.gc
+    ? `目前換算：<em>${P.gc.clicks} 刻度</em>${P.gc.name?`（${esc(P.gc.name)}）`:''}。你的範圍 ${P.gc.min}–${P.gc.max}，一「格」＝ ${P.gc.step} 刻度，校準建議會照這個講。`
+    : (S.grinder ? '這個手法的研磨度不可調整（濾掛是預磨的），所以不給刻度。'
+                 : '還沒填，藍圖維持文字描述。填好之後「調細一格」會變成實際要轉到的數字。');
   $('calcLog').innerHTML='<b>運算軌跡：</b>'+P.logs.join(' → ')+' ⇒ '+P.temp+'°C。手勢：'+P.flowNote+'。';
   $('processHint').textContent=PROCESSES[S.process].note;
   $('originHint').textContent=ORIGINS[S.origin].note;
@@ -1118,6 +1233,17 @@ function loop(){
   $('ring').style.strokeDashoffset=RING_LEN*(1-frac);
   $('ring').style.stroke=done?'var(--ok)':(s.pour?'var(--crema)':'var(--water)');
 
+  /* 本段剩餘：碼錶顯示的是累計時間，但手上要追的是「這段還剩幾秒」。
+     最後 3 秒轉為警示色，讓人來得及把壺移開或準備下一段。 */
+  const rem=$('stepRem');
+  rem.classList.remove('urgent','done');
+  if(done){ rem.textContent='沖煮完成'; rem.classList.add('done'); }
+  else{
+    const left=Math.max(0,Math.ceil(s.end-t));
+    rem.textContent=`本段剩餘 ${fmt(left)}`;
+    if(left<=3)rem.classList.add('urgent');
+  }
+
   if(done&&running){finishBrew();}
 }
 
@@ -1136,6 +1262,35 @@ function renderNext(i,t){
   /* 數字排在動作名之前：一行放不下時被省略號吃掉的是名稱，不是要照著倒的水量 */
   $('nextText').textContent=`${inSec} 秒後 · ${detail} · ${stepShort(nx.action)}`;
   $('nextFlow').textContent=nx.flow&&nx.flow!=='—'?nx.flow:'';
+}
+
+/* 預覽頁：把運算結果攤成一份可以慢慢看完的流程表。
+   導航頁的每個數字都只在「需要用到的那一秒」才出現，開始之前需要一個能從頭讀到尾的地方。 */
+function renderPreview(){
+  $('pvName').textContent=(MX[S.master]||MASTERS.threepour).name;
+  $('pvTemp').textContent=P.coolTemp?`${P.temp}→${P.coolTemp}°C`:P.temp+'°C';
+  $('pvWaterLabel').textContent=$('waterLabel').textContent;
+  $('pvRatio').textContent='1:'+P.ratio;
+  $('pvWater').textContent=P.total+'g';
+  $('pvGrind').innerHTML=$('outGrind').innerHTML;
+  $('pvWarn').innerHTML=$('warnBox').innerHTML;
+  $('pvTotal').textContent=fmt(P.plan);
+  $('pvSteps').innerHTML=P.steps.map((s,i)=>{
+    const prev=i>0?P.steps[i-1].target:0;
+    const add=s.pour&&s.target>prev?s.target-prev:0;
+    return `<div class="pvstep ${add?'pour':''}">
+      <div class="no2">${i+1}</div>
+      <div class="bd">
+        <div class="hd"><span class="tm">${fmt(s.start)}</span><span class="nm">${esc(stepShort(s.action))}</span></div>
+        <div class="hd" style="margin-top:3px">
+          ${add?`<span class="mt">注到 ${s.target}g（＋${add}g）</span>`
+               :`<span class="tm">維持 ${Math.round(s.end-s.start)} 秒</span>`}
+          ${s.flow&&s.flow!=='—'?`<span class="fl">${esc(s.flow)}</span>`:''}
+        </div>
+        ${s.tip?`<div class="tp">${esc(s.tip)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderStrip(cur,t){
@@ -1208,8 +1363,28 @@ $('resetBtn').onclick=()=>{
   [...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
   loop();
 };
-$('goBrew').onclick=()=>{calc();$('setupPage').style.display='none';$('brewPage').style.display='block';$('resetBtn').onclick();window.scrollTo(0,0);};
-$('backBtn').onclick=()=>{stopCountdown();running=false;clearInterval(tick);releaseWake();$('brewPage').style.display='none';$('setupPage').style.display='block';};
+/* ============================================================
+   三頁路由：設定 → 預覽 → 導航
+   接上瀏覽器歷史，iPhone 從螢幕左緣滑回才會是「回上一頁」，
+   而不是像原本那樣直接把整個 PWA 關掉。
+   ============================================================ */
+const VIEWS={setup:'setupPage',preview:'previewPage',brew:'brewPage'};
+let curView='setup';
+function leaveBrew(){stopCountdown();running=false;clearInterval(tick);releaseWake();}
+function showView(v){
+  if(!VIEWS[v])v='setup';
+  if(curView==='brew'&&v!=='brew')leaveBrew();   // 離開導航頁一定要停表與放掉螢幕恆亮
+  Object.entries(VIEWS).forEach(([k,id])=>{$(id).style.display = k===v?'block':'none';});
+  curView=v;window.scrollTo(0,0);
+}
+function nav(v){ if(v===curView)return; showView(v); history.pushState({view:v},''); }
+history.replaceState({view:'setup'},'');
+window.addEventListener('popstate',e=>showView(e.state&&e.state.view));
+
+$('goBrew').onclick=()=>{calc();renderPreview();nav('preview');};
+$('pvBack').onclick=()=>history.back();
+$('pvStart').onclick=()=>{nav('brew');$('resetBtn').onclick();};
+$('backBtn').onclick=()=>history.back();
 
 function finishBrew(){
   running=false;clearInterval(tick);
@@ -1388,10 +1563,14 @@ function snapshot(){
 function saveSettings(){try{localStorage.setItem(SET_KEY,JSON.stringify(snapshot()));}catch(e){}}
 function applySettings(d,silent){
   if(!d)return false;
-  ['dose','roast','process','origin','dripper','master','tweak','ratioOverride'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k];});
+  ['dose','roast','process','origin','dripper','master','tweak','ratioOverride','grinder'].forEach(k=>{if(d[k]!==undefined)S[k]=d[k];});
   S.dose=clamp(+S.dose||20,8,40);S.tweak=clamp(+S.tweak||0,-2,2);
   S.ratioOverride = S.ratioOverride ? clamp(+S.ratioOverride,8,20) : null;
+  S.grinder = (S.grinder&&S.grinder.max>S.grinder.min) ? S.grinder : null;
   $('dose').value=S.dose;$('tweak').value=S.tweak;$('ratioLock').value=S.ratioOverride??'';
+  $('grName').value=S.grinder?.name??'';
+  $('grMin').value=S.grinder?.min??'';
+  $('grMax').value=S.grinder?.max??'';
   if(S.master.startsWith('c:')&&!MX[S.master])S.master='threepour';  // 自訂手法已被刪除
   ['roast','process','origin','dripper','master'].forEach(k=>{if($(k).querySelector(`option[value="${S[k]}"]`))$(k).value=S[k];else S[k]=$(k).value;});
   if(d.latteStrength)$('latteStrength').value=d.latteStrength;
@@ -1421,26 +1600,38 @@ function calibrate(l){
   const plan=l.plan||0, secs=l.secs||0;
   const slow = plan && secs > plan+40;    // 比藍圖慢很多 → 流速偏慢
   const fast = plan && secs < plan-40;    // 比藍圖快很多 → 流速偏快
+  /* dir：研磨要往哪個方向動（-1 調細、+1 調粗、0 不動）；half：只動半格。
+     設定過磨豆機時，renderCalibration 會把它換算成實際要轉到第幾刻度。 */
   if(l.verdict==='sour'){
     return fast
-      ? {t:'流速太快，水還沒把東西帶出來就走了',b:'研磨調細一格。這是萃取不足最直接的解，先只動這一項。'}
-      : {t:'萃取停在前段',b:'依序試：① 研磨調細一格 ② 把注水段數加一段（拉長接觸時間）③ 風味滑桿往「甜／醇厚」推一格。一次只動一項，才知道是誰的功勞。'};
+      ? {t:'流速太快，水還沒把東西帶出來就走了',b:'研磨調細一格。這是萃取不足最直接的解，先只動這一項。',dir:-1}
+      : {t:'萃取停在前段',b:'依序試：① 研磨調細一格 ② 把注水段數加一段（拉長接觸時間）③ 風味滑桿往「甜／醇厚」推一格。一次只動一項，才知道是誰的功勞。',dir:-1};
   }
   if(l.verdict==='bitter'){
     return slow
-      ? {t:'流速太慢，泡太久了',b:'研磨調粗一格，並且尾段變成細滴漏時就提早把濾杯移開，別等它滴完。'}
-      : {t:'萃取推過頭了',b:'依序試：① 研磨調粗一格 ② 減少注水段數或縮小繞圈範圍 ③ 風味滑桿往「果酸」推一格。細粉過多也會苦，磨豆機記得先推殘粉。'};
+      ? {t:'流速太慢，泡太久了',b:'研磨調粗一格，並且尾段變成細滴漏時就提早把濾杯移開，別等它滴完。',dir:1}
+      : {t:'萃取推過頭了',b:'依序試：① 研磨調粗一格 ② 減少注水段數或縮小繞圈範圍 ③ 風味滑桿往「果酸」推一格。細粉過多也會苦，磨豆機記得先推殘粉。',dir:1};
   }
   return slow
-    ? {t:'味道對了，但流速偏慢',b:'風味沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。'}
-    : {t:'這組參數是對的，記下來',b:'想再往上挑戰的話：研磨再細半格試試看能不能萃出更多甜感與厚實度，但只要開始出現苦味就退回這一格。這一格就是這支豆子的答案。'};
+    ? {t:'味道對了，但流速偏慢',b:'風味沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。',dir:1,half:true}
+    : {t:'這組參數是對的，記下來',b:'想再往上挑戰的話：研磨再細半格試試看能不能萃出更多甜感與厚實度，但只要開始出現苦味就退回這一格。這一格就是這支豆子的答案。',dir:-1,half:true};
 }
 function renderCalibration(){
   const box=$('calibBox');if(!box)return;
   const c=calibrate(loadLogs()[0]);
   if(!c){box.style.display='none';return;}
   box.style.display='block';
-  box.innerHTML=`🎯 <b>依上一杯校準</b>：${c.t}。<br>${c.b}`;
+  /* 有校正過磨豆機就把「一格」講成實際刻度 —— 這是整個校準迴圈最後一哩 */
+  const gc=P&&P.gc;
+  let line='';
+  if(gc&&c.dir){
+    const amt=c.half?Math.max(1,Math.round(gc.step/2)):gc.step;
+    const to=clamp(gc.clicks+c.dir*amt,gc.min,gc.max);
+    line = to===gc.clicks
+      ? `<br>⚠ 你的磨豆機已經到範圍邊界（${gc.clicks} 刻度），這個方向轉不動了 —— 改調上面其他項目，或放寬手沖刻度範圍。`
+      : `<br>👉 你的磨豆機：<b>從 ${gc.clicks} 轉到 ${to} 刻度</b>（${c.dir<0?'調細':'調粗'} ${amt} 格）。`;
+  }
+  box.innerHTML=`🎯 <b>依上一杯校準</b>：${c.t}。<br>${c.b}${line}`;
 }
 
 function loadLogs(){try{return JSON.parse(localStorage.getItem(LOG_KEY))||[];}catch(e){return[];}}
@@ -1575,6 +1766,19 @@ $('ratioLock').addEventListener('change',()=>{
   $('ratioLock').value=S.ratioOverride;   // 超出範圍時把修正後的值寫回欄位
   calc();
 });
+/* 磨豆機刻度校正：範圍不成立（沒填完、或最粗 ≤ 最細）就當作沒設定，藍圖退回文字描述 */
+function readGrinder(){
+  const min=parseInt($('grMin').value,10), max=parseInt($('grMax').value,10);
+  S.grinder = (isFinite(min)&&isFinite(max)&&max>min)
+    ? {name:$('grName').value.trim().slice(0,24),min:clamp(min,0,999),max:clamp(max,0,999)}
+    : null;
+  calc();
+}
+['grName','grMin','grMax'].forEach(k=>$(k).addEventListener('input',readGrinder));
+$('grClear').onclick=()=>{
+  $('grName').value='';$('grMin').value='';$('grMax').value='';
+  S.grinder=null;calc();toast('已清除磨豆機設定');
+};
 $('ratioAuto').onclick=()=>{
   if(S.ratioOverride===null){toast('目前已經是自動運算');return;}
   S.ratioOverride=null;$('ratioLock').value='';calc();toast('粉水比已回到自動運算');
