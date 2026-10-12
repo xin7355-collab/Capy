@@ -127,6 +127,43 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .pacer svg{transform:rotate(-90deg)}
 .pacer .ring-bg{stroke:var(--line);fill:none}
 .pacer .ring-fg{stroke:var(--crema);fill:none;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+/* ---- 圓環內的繞圈示意圖層 ---- */
+/* 圓弧內緣是 107（r112 扣掉半個 stroke 10），所以半徑一律 ≤105 不會壓到弧 */
+.panim{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.18}
+.panim .pa-path{fill:none;stroke:currentColor;stroke-width:2;stroke-dasharray:5 7}
+/* 小圈的情境（硬幣、定點、點滴）半徑小，整圈都躲在大數字後面而看不出來。
+   補一圈粉床外緣當比例尺，「小」才看得出來是相對誰小。 */
+.panim .pa-ref{fill:none;stroke:currentColor;stroke-width:1.5;stroke-dasharray:2 10;opacity:0;transition:opacity .2s}
+.panim[data-small] .pa-ref{opacity:.55}
+.panim .pa-dot{fill:currentColor}
+.pacer .panim{color:var(--crema)}
+.pacer .panim[data-kind=wait],.pacer .panim[data-kind=soak]{color:var(--water)}
+/* 外層 g 轉圈，內層的點負責離圓心多遠；兩個疊起來就是螺旋 */
+.pa-orbit{transform-origin:125px 125px;animation:paSpin 3.2s linear infinite}
+.pa-dot{animation:paOut 6.4s ease-in-out infinite alternate}
+@keyframes paSpin{to{transform:rotate(360deg)}}
+@keyframes paOut{from{transform:translateX(0)}to{transform:translateX(var(--pa-r,60px))}}
+/* 固定半徑的繞行：點直接停在該半徑上，只靠外層旋轉 */
+.panim[data-fixed] .pa-dot{animation:none;transform:translateX(var(--pa-r,60px))}
+/* 定點：不轉、不外移，只呼吸 */
+.panim[data-kind=center] .pa-orbit{animation:none}
+.panim[data-kind=center] .pa-dot{animation:paPulse 1.9s ease-in-out infinite;transform:none}
+@keyframes paPulse{0%,100%{r:6px;opacity:.5}50%{r:13px;opacity:1}}
+/* 點滴：一顆一顆從上方落到中心 */
+.panim[data-kind=drip] .pa-orbit{animation:none}
+.panim[data-kind=drip] .pa-dot{animation:paDrip 1.5s ease-in infinite;transform:none}
+@keyframes paDrip{0%{cy:60px;opacity:0}20%{opacity:1}85%{cy:125px;opacity:1}100%{cy:125px;opacity:0}}
+/* 搖晃濾杯：整個虛線圓偏心繞行 */
+.panim[data-kind=swirl] .pa-path{animation:paSwirl 1.6s linear infinite;transform-origin:125px 125px}
+@keyframes paSwirl{to{transform:rotate(360deg) translateX(14px) rotate(-360deg)}}
+/* 浸泡 / 等待：虛線圓當水位，靠縮放表示水位升降 */
+.panim[data-kind=soak] .pa-path{animation:paRise 3.4s ease-out infinite;transform-origin:125px 125px}
+@keyframes paRise{from{transform:scale(.25);opacity:.4}to{transform:scale(1);opacity:1}}
+.panim[data-kind=wait] .pa-path{animation:paFall 3.4s ease-in infinite;transform-origin:125px 125px}
+@keyframes paFall{from{transform:scale(1);opacity:1}to{transform:scale(.2);opacity:.3}}
+.panim[data-kind=wait] .pa-dot{animation:paDrip 1.5s ease-in infinite;transform:none}
+.panim[data-kind=wait] .pa-orbit{animation:none}
+
 .pacer .center{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 16%;text-align:center}
 .pacer .live{font-family:var(--mono);font-size:3.4rem;font-weight:900;line-height:1;letter-spacing:-.03em}
 .pacer .live small{font-size:1.1rem;color:var(--muted);font-weight:600}
@@ -189,15 +226,6 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .btop .bsub{font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:1px}
 .btop .tgl{padding:6px 8px;font-size:.78rem;line-height:1}
 
-/* 進度量條：漸變色＋流動動畫，讓「走到哪裡」一眼可見 */
-.pbar{height:7px;border-radius:99px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;flex-shrink:0}
-.pbar i{display:block;height:100%;width:0;border-radius:99px;
-  background:linear-gradient(90deg,var(--water),var(--crema),var(--copper),var(--crema),var(--water));
-  background-size:260% 100%;transition:width .3s linear;animation:pbflow 3.4s linear infinite}
-.pbar.done i{background:linear-gradient(90deg,var(--ok),var(--crema),var(--ok));background-size:260% 100%}
-@keyframes pbflow{from{background-position:0% 50%}to{background-position:260% 50%}}
-.prow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.66rem;color:var(--muted);flex-shrink:0}
-.prow b{color:var(--water);font-weight:700}
 
 .btime{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;flex-shrink:0}
 .btime .el{font-family:var(--mono);font-size:1.75rem;font-weight:800;color:var(--muted)}
@@ -223,14 +251,29 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 }
 .wrap.brew .btime .el{font-size:clamp(1.75rem,4.3vh,2.3rem)}
 .wrap.brew .steprem{font-size:clamp(.78rem,1.65vh,1rem)}
-.wrap.brew .prow{font-size:clamp(.66rem,1.35vh,.78rem)}
-.wrap.brew .action-box{margin-top:0;padding:11px 13px;flex-shrink:0}
-.wrap.brew .action-box .act{font-size:clamp(1rem,2.1vh,1.2rem)}
+/* 動作卡固定高度 —— 這是圓環不再跳動的關鍵。
+   圓環大小是 min(420px, 100%, 46vh)，三項裡只有 100% 是變數，它解析的對象是
+   flex:1 的 .pacerwrap；而八個兄弟裡只有這張卡是內容撐開的。把每一行的行數
+   釘死、整張卡給固定高度之後，100% 就變成常數，圓環自然定住。
+   短內容會留白，這是刻意的 —— 寧可留白，也不要讓圓環跟著文字長短縮放。 */
+.wrap.brew .action-box{margin-top:0;padding:10px 13px;flex-shrink:0;
+  height:calc(1.5em + var(--actL) + var(--circL) + var(--tipL) + 20px);
+  --actL:calc(clamp(1rem,2.1vh,1.2rem) * 1.5);
+  --circL:calc(clamp(.72rem,1.5vh,.86rem) * 1.45 * 2 + 5px);
+  --tipL:calc(clamp(.7rem,1.45vh,.82rem) * 1.5 * 2 + 5px);
+  overflow:hidden}
+.wrap.brew .action-box .tag{line-height:1.5}
+/* 動作名稱固定一行：太長就省略號，完整字樣預覽頁看得到 */
+.wrap.brew .action-box .act{font-size:clamp(1rem,2.1vh,1.2rem);line-height:1.5;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0}
 .wrap.brew .action-box .sub{font-size:clamp(.7rem,1.45vh,.82rem);color:var(--muted);line-height:1.5;margin-top:5px}
+/* 導航頁的 tip 固定夾兩行、不可點開 —— 點開會把卡片撐高，圓環立刻縮 */
+.wrap.brew .action-box .sub{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;padding:0;cursor:default}
+.wrap.brew .action-box .sub.more::after,.wrap.brew .action-box .sub.open::after{content:none}
 /* 繞圈指示：沖的時候最常忘記的就是「這一段圈要繞多大」，所以給它自己一行、
    用水藍色與動作名稱分開，不要混在灰色的說明裡。 */
-.action-box .circ{font-size:clamp(.72rem,1.5vh,.86rem);color:var(--water);line-height:1.45;margin-top:5px;font-weight:600}
-.action-box .circ:empty{display:none}
+.action-box .circ{font-size:clamp(.72rem,1.5vh,.86rem);color:var(--water);line-height:1.45;margin-top:5px;font-weight:600;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .wrap.brew .nextline{margin-top:0;flex-shrink:0}
 .wrap.brew .nextline .body{font-size:clamp(.72rem,1.5vh,.84rem)}
 .wrap.brew .nextline .nf{font-size:clamp(.92rem,1.95vh,1.1rem)}
@@ -600,34 +643,65 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 
       <div class="kb-h">繞圈怎麼繞（完整動作）</div>
       <ul class="kb">
-        <li><b>一圈的完整路徑是「出去再回來」</b>：從正中心起繞，一圈比一圈大，繞到最外圈後<b>不要停在外圈</b> —— 用同樣的速度一圈比一圈小地收回中心，然後再出去。來回循環到這一段的水量注完為止。只繞出去不收回來，中心會越來越少吃到水。</li>
-        <li><b>外圈的界線：距濾紙壁約 1 公分就折返</b>。水柱一旦碰到濾紙，水會沿著紙壁直接流下去、整個繞過粉層（通道效應），那一口就是稀的。</li>
-        <li><b>小圈到底多小</b>：常見的講法是「50 元硬幣大小」，直徑<b>約 2.8 公分</b>；也有人用 10 元硬幣（約 2.6 公分），差別不大。縮小範圍的目的是推開中央那塊最厚的粉，同時避免大水流沖刷邊緣細粉而帶出苦澀。</li>
-        <li><b>「要繞幾圈」沒有標準答案</b>：查不到任何權威來源給得出圈數，各家配方也都不寫。真正能控制的是<b>繞多大</b>與<b>繞多慢</b>這兩個旋鈕，圈數只是它們的結果。本 App 因此不顯示圈數，只告訴你這一段的範圍與節奏。</li>
-        <li><b>壺嘴高度 3～5 公分、保持垂直</b>：落差過大會強烈沖刷粉層，把微粉打進濾紙底部堵住排氣縫隙。貼得低，力道自然柔和。</li>
+        <li><b>一圈的完整路徑是「出去再回來」</b>：從正中心起繞，一圈比一圈大，繞到最外圈後<b>不要停在外圈</b> —— 用同樣的速度一圈比一圈小地收回中心，然後再出去。只繞出去不收回來，中心會越來越少吃到水。</li>
+        <li><b>外圈的界線：沿著外圍繞，但不要讓水柱直接打到濾紙上</b>。水柱一旦碰到濾紙，水會沿著紙壁流下去、整個繞過粉層（通道效應），那一口就是稀的。<b>不必記公分數</b> —— 看著粉面泡泡的外圍繞就對了。</li>
+        <li><b>小圈到底多小</b>：有人說「50 元硬幣大小」，也有人說「1 元硬幣大小」，都是指中心那一小塊。縮小範圍的目的是推開中央那塊最厚的粉，同時避免大水流沖刷邊緣細粉而帶出苦澀。</li>
+        <li><b>「要繞幾圈」沒有標準答案</b>：找不到任何來源給得出圈數，各家配方也都不寫。唯一出現過的量化是悶蒸時的「中間繞 3 秒再往外繞回中間」與「外面繞兩圈回中間」。真正能控制的是<b>繞多大</b>與<b>繞多慢</b>，圈數只是它們的結果。</li>
         <li><b>水位不要高過粉層太多</b>：水一旦積起來，就會從粉層最薄弱的那一點集中流下去，萃取立刻變得不均勻。</li>
       </ul>
 
-      <div class="kb-h">繞快還是繞慢？（這一題沒有定論）</div>
+      <div class="kb-h">比繞圈路線更要緊的兩件事</div>
       <ul class="kb">
-        <li><b>常見講法</b>：繞圈就是用水柱攪拌，繞越快攪拌越強、萃出來的物質越多。想提高萃取率就繞快一點。</li>
-        <li><b>反方的實測</b>：也有對照實驗指出，<b>快速注水會讓水溫明顯下降，而降溫的負面影響大於攪動帶來的增益</b>，結果反而是慢繞萃得比較多。</li>
-        <li><b>怎麼辦</b>：兩種說法都有人支持，<b>目前沒有定論</b>。建議用同一支豆、同一個研磨度，只改繞圈速度沖兩杯對照一次 —— 這比相信任何一方都可靠。預設先用「慢而穩」，因為它同時也比較好控制。</li>
-        <li><b>為什麼是畫圓，不是十字或 ∞ 字</b>：圓形的水流比較不容易產生紊流；十字、∞ 字這類來回折返的路徑擾動更亂，粉層容易被沖出溝。</li>
+        <li><b>壺嘴貼近粉面</b>：這是所有來源裡共識最強的一條，比繞圈怎麼繞還一致。貼近了力道自然柔和，粉層結構才守得住；離太遠會沖散粉層，也更難穩定繞圈。</li>
+        <li><b>水流要有穿透力，不能只打在水面上</b>：水柱要能垂直往下帶動粉層，整個粉床上下翻動才算有效擾動。只在水面上掃，後段很容易變成粉沉下去、粉水分離。</li>
       </ul>
 
-      <div class="kb-h">定點注水是錯的嗎？（不是，它是另一種手法）</div>
+      <div class="kb-h">繞快還是繞慢？（慢的那邊證據比較多）</div>
       <ul class="kb">
-        <li><b>兩種手法的差別在粉床形狀</b>。<b>中心定點</b>：水垂直穿過中央，粉層整體向外翻滾、形成中間凹陷的「火山坑」，水與粉接觸時間較短，突出前段的酸質與明亮感。<b>繞圈</b>：從中心向外濕潤整個粉床、形成「碗狀」粉床，接觸面積大，萃取比較完整。</li>
-        <li><b>所以定點不是做錯，是在做另一件事</b>。本 App 裡就有手法刻意用定點：Kono 滲透點滴法的前段（完全不繞圈，靠毛細現象把水吸開）、4:6 法的最後一注（避免翻攪邊緣雜質、保持尾段乾淨）、濾掛的第三注（粉層太薄，繞圈容易沖穿）。</li>
-        <li><b>混合用法也很常見</b>：以中心定點為主體，搭配一個硬幣大小的小圈，既保有定點的穩定，又有一點點攪動。第二注的「小圈」本質上就是這個。</li>
-        <li><b>判斷依據是粉床，不是手感</b>：沖完掀開看，粉床應該是平坦的圓餅。中間深凹＝水太集中在中心；邊緣留一圈沒塌的粉牆＝外圈沒吃到水，下次把螺旋繞大一點（但仍然距紙壁 1 公分）。</li>
+        <li><b>慢繞＝甜、厚實、圓潤；快繞＝酸、香、層次明顯</b>。這是三份不同來源一致的方向。新手建議從慢開始，因為速度越慢越容易把水柱控好，失敗率最低。</li>
+        <li><b>繞快不等於萃得多</b>。有一份控制變數的實測（總時間與總擾動時間固定，只把擾動頻率從每秒一下提高到每秒兩下）量到的濃度是：<b>慢的 TDS 1.04、快的 0.96</b> —— 慢的反而比較濃。<b>這是單次、手工操作的實驗，n=1</b>，當方向性參考就好。</li>
+        <li><b>原因很反直覺：你手上繞得快，濾杯裡不見得擾動得快</b>。快速繞圈比較像拿一根筷子在水面左右攪，水面下反而擾動得少；慢繞才是垂直向下、把整個粉床上下翻起來。</li>
+        <li><b>為什麼是畫圓，不是十字或 ∞ 字</b>：圓形的水流比較不容易產生紊流；來回折返的路徑擾動更亂，粉層容易被沖出溝。</li>
+        <li><b>改了速度，其他參數要跟著回調</b>：繞圈速度變了，水溫、粉水比、研磨度通常都要跟著微調，否則只是換一個失衡。</li>
       </ul>
 
-      <div class="kb-h">由內向外 vs 由外向內</div>
+      <div class="kb-h">內圈與外圈（各做各的事）</div>
       <ul class="kb">
-        <li><b>由內向外是主流</b>，理由明確：濾杯中央的粉層最厚，先讓中心浸潤才能形成均勻對流。本 App 所有手法都是這個方向。</li>
-        <li><b>由外向內的說法</b>：有來源認為從外圈起繞會讓流速變慢、形成類似半浸泡的狀態，口感比較圓潤厚實。<b>但這只有單一來源、沒有對照實驗</b>，當作可以試的方向就好，不要當成定律。</li>
+        <li><b>多繞內圈</b>：甜味與厚實度好，味道比較集中，但層次變少。水會在中心形成通道，中間流得比較快。</li>
+        <li><b>多繞外圈</b>：喝起來淡一點、酸比較明顯，酸甜之間的層次反而更豐富。</li>
+        <li><b>外圈真正的作用不是多萃，是側流</b>：水沿著外圍往下走會沖刷濾紙，把黏在紙上的細粉帶回去，避免濾紙被細粉糊住。<b>但水流一直都在外圍就容易萃取不足</b>。</li>
+        <li><b>所以內外都要繞</b>。抓不到訣竅時就平均繞；熟了之後再依想要的風味調內外比例（例如內六外四、內三外七）。</li>
+      </ul>
+
+      <div class="kb-h">由內向外 vs 由外向內（這是風格選擇）</div>
+      <ul class="kb">
+        <li><b>由內向外（傳統做法，本 App 的預設）</b>：萃取率明顯比較高，甜感與 Body 都更好。</li>
+        <li><b>由外向內</b>：喝起來清澈透徹、酸質明亮、立體感好，但甜感與厚實度不如由內向外。</li>
+        <li><b>兩種都有人做對照試喝，沒有誰對誰錯</b> —— 喜歡明亮就由外往內，喜歡甜厚就由內往外。</li>
+        <li><b>進階：「挖洞」</b>：錐形濾杯下層的粉比較容易萃取不均，有一派做法是先從外往內繞，讓中心被水柱挖出一個凹洞，之後直接在洞裡萃取，藉此讓萃取更均勻。</li>
+      </ul>
+
+      <div class="kb-h">不繞圈也行：中心定點流派</div>
+      <ul class="kb">
+        <li><b>做法</b>：手沖壺固定在中心不太移動，只在中心一枚硬幣大小的範圍內隨意繞一下就好，外面完全不用繞。變數因此從「手法」轉移到<b>研磨度與每段給水量</b>。</li>
+        <li><b>為什麼合理</b>：手法一旦不是變數，豆子與研磨的差異才看得出來。這也是很多比賽選手在用的方式，而且對新手來說極難失敗。</li>
+        <li><b>定點與繞圈的差別在粉床形狀</b>：中心定點讓水垂直穿過中央、粉層整體向外翻滾形成「火山坑」，接觸時間短，突出前段的酸質與明亮感；繞圈則濕潤整個粉床形成「碗狀」，接觸面積大、萃取比較完整。</li>
+        <li><b>App 裡就有手法刻意用定點</b>：Kono 滲透點滴的前段、4:6 法的最後一注、濾掛的第三注。</li>
+      </ul>
+
+      <div class="kb-h">用眼睛判斷，不要只看碼錶</div>
+      <ul class="kb">
+        <li><b>悶蒸什麼時候結束</b>：看粉面，表層不再動、不再膨脹就可以進下一段，不必硬等秒數。</li>
+        <li><b>什麼時候補下一段水</b>：看水位降到剩一半、或剩三分之一再補。若配方要求「流乾」就真的等它全部流完。</li>
+        <li><b>繞到哪裡算外圈</b>：沿著粉面金黃色泡泡的外圍繞，泡泡的邊界就是你的界線。</li>
+        <li>導航頁的秒數是為了讓節奏有個依據，<b>眼睛看到的粉床永遠優先</b>。</li>
+      </ul>
+
+      <div class="kb-h">推粉法與一般繞圈的差別（差在時機，不在路線）</div>
+      <ul class="kb">
+        <li><b>推粉法</b>：用在悶蒸剛結束、粉層裡還有大量氣體的時候。順著中間湧出的泡泡往外繞，氣體會把粉往濾杯壁上推，粉牆爬高成 V 字形、中心變薄，流速因此變快，果酸也更清亮。</li>
+        <li><b>一般繞圈</b>：第二段以後氣體已經排得差不多，這時再怎麼繞，粉層也只是吃水上下膨脹，厚度不會變 —— 所以它既不修正流速也不修正風味，就是單純把水均勻給進去。</li>
+        <li><b>結論</b>：看起來都是順時針往外繞，但效果差在「你是在氣體還多的時候繞，還是氣體沒了才繞」。</li>
       </ul>
 
       <div class="kb-h">流速的兩個數字（很多配方寫混了）</div>
@@ -729,13 +803,6 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     </div>
   </div>
 
-  <!-- 進度量條：整杯走到哪裡 -->
-  <div class="pbar" id="pbar"><i id="pbarFill"></i></div>
-  <div class="prow">
-    <span id="pStep">第 1 段 / 共 1 段</span>
-    <span id="pWater"><b>0</b> / 0 g</span>
-  </div>
-
   <div class="btime">
     <span class="el" id="timer">00:00</span>
     <div class="steprem" id="stepRem">本段剩餘 --</div>
@@ -747,6 +814,16 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <svg viewBox="0 0 250 250" preserveAspectRatio="xMidYMid meet">
         <circle class="ring-bg" cx="125" cy="125" r="112" stroke-width="10"/>
         <circle class="ring-fg" id="ring" cx="125" cy="125" r="112" stroke-width="10"/>
+      </svg>
+      <!-- 繞圈示意：半透明、不吃事件，夾在圓弧與文字之間。
+           虛線圓是靜態的（這一段該繞多大），只有那顆點在動 —— 系統開「減少動態
+           效果」時全域會把 animation 關掉，靜態底圖必須自己就看得懂。 -->
+      <svg class="panim" id="panim" viewBox="0 0 250 250" aria-hidden="true">
+        <circle class="pa-ref" cx="125" cy="125" r="88"/>
+        <circle class="pa-path" id="paPath" cx="125" cy="125" r="60"/>
+        <g class="pa-orbit" id="paOrbit">
+          <circle class="pa-dot" id="paDot" cx="125" cy="125" r="7"/>
+        </g>
       </svg>
       <div class="center">
         <div class="cap">秤上現在應到</div>
@@ -762,7 +839,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <div class="tag">動作指示</div>
     <div class="act" id="actText">按下開始，跟著指針倒水</div>
     <div class="circ" id="circText"></div>
-    <div class="sub clamp" id="tipText"></div>
+    <div class="sub" id="tipText"></div>
   </div>
   <div class="nextline" id="nextLine">
     <span class="lbl">下一段</span>
@@ -1381,31 +1458,53 @@ function liveTarget(t,i){
 }
 
 /* 產生該段的語音摘要：注水段報「注到 X 克，流速…」；非注水段報等待秒數 */
-/* 這一段的圈要怎麼繞。
-   刻意從既有的 action／tip 關鍵字推導，而不是在每個手法裡多塞一個欄位 ——
+/* 這一段的圈要怎麼繞，外加一個 kind 給圓環裡的示意動畫用。
+   刻意從既有的 action／tip 關鍵字推導，而不是在每個手法裡多塞欄位 ——
    那些文字是配方的一部分，動它要先確認；推導則是純新增、改不到配方。
-   查不到關鍵字就回空字串，寧可少顯示一行，也不要掰一個看起來很精確的指示。
 
-   刻意不寫「約繞幾圈」：查證過沒有任何權威來源給得出圈數，真正能控制的
-   是「繞多大」與「繞多慢」。編一個數字出來只會讓人以為那是配方的一部分。 */
-const SPIRAL='中心起 → 向外螺旋到距濾紙 1 公分折返 → 等速收回中心，反覆。';
+   刻意不寫「約繞幾圈」：使用者提供的 9 份逐字稿裡沒有任何一篇給得出圈數，
+   唯二的量化只有悶蒸「繞 3 秒回中間」與一次 1Hz/2Hz 的擾動實驗。
+   真正能控制的是「繞多大」與「繞多慢」。
+
+   也不再寫「距濾紙 1 公分」—— 那個公分數在 9 篇裡零來源，是先前自己加的。
+   逐字稿的說法一律是「小心不要衝到濾紙」。
+
+   文字長度要壓在兩行內：導航頁的動作卡是固定高度，超過就會被裁掉。 */
+const SPIRAL='中心起 → 向外螺旋 → 收回中心，反覆。';
+const CIRC=[
+  // 順序有意義：浸泡要先攔，否則它 tip 裡的「較大水流」會被誤判成要繞圈
+  [/浸泡|注滿|閥門關|關閥/, 'soak',   68, '浸泡式：注滿就好，不必講究繞圈，注完靜置等它泡。'],
+  [/點滴|一顆顆/,           'drip',   14, '水滴落在正中心，完全不繞圈，靠粉層自己把水吸開。'],
+  [/中心定點|定點/,         'center', 14, '水柱固定在正中心不繞，避免翻攪邊緣的細粉。'],
+  [/硬幣/,                  'coin',   22, '只繞中央 50 元硬幣大小的小圈，不要外擴。'],
+  [/潤濕全部|打濕|全部粉層/,'wet',    88, '繞圈把全部的粉都打濕，讓每一處同時吃到水，不必繞得漂亮。'],
+  [/三分之二/,              'two3',   68, '範圍收在中央三分之二，'+SPIRAL],
+  [/小範圍|小圈|縮小範圍|一半/,'half',52, '縮到中央一半的範圍，'+SPIRAL],
+  [/搖晃|搖杯|輕搖|旋轉/,   'swirl',  70, '這段靠搖晃濾杯讓粉層平整，不是靠繞圈。'],
+  [/挖深穴|高位/,           'wet',    88, '高位大水流，由中心快速向外繞到全部粉層都濕。'],
+  [/細水柱|細水流/,         'spiral', 80, '維持細水柱，'+SPIRAL+'別沖破邊緣粉牆。'],
+  [/大水流|快速|一鼓作氣|加快/,'spiral',85,SPIRAL+'這段刻意快注，用水流動能翻起粉層。'],
+];
 function circleHint(s){
-  if(!s||!s.pour)return '';
+  // 非注水段＝等待濾完：動畫改成水位下降，文字留空
+  if(!s||!s.pour)return {kind:'wait',r:92,text:''};
   const t=(s.action||'')+' '+(s.tip||'');
-  // 順序有意義：浸泡式要先攔下來，否則它 tip 裡的「較大水流」會被誤判成要繞圈
-  if(/浸泡|注滿|閥門關|關閥/.test(t))      return '浸泡式：注滿就好，不必講究繞圈，注完靜置等它泡。';
-  if(/點滴|一顆顆/.test(t))                return '水滴落在正中心 1 公分內，完全不繞圈，靠粉層自己把水吸開。';
-  if(/中心定點|定點/.test(t))              return '水柱固定在正中心不繞，避免翻攪邊緣的細粉。';
-  if(/硬幣/.test(t))                       return '只繞中央 50 元硬幣大小（直徑約 2.8 公分）的小圈，不要外擴。';
-  if(/潤濕全部|打濕|全部粉層/.test(t))     return '繞圈把全部的粉都打濕，重點是讓每一處同時吃到水，不必繞得漂亮。';
-  if(/三分之二/.test(t))                   return '範圍收在中央三分之二，絕不碰到邊緣。'+SPIRAL;
-  if(/小範圍|小圈|縮小範圍|一半/.test(t))  return '縮小到中央約一半的範圍繞圈，'+SPIRAL;
-  if(/搖晃|搖杯|輕搖|旋轉/.test(t))        return '這段靠搖晃濾杯讓粉層平整，不是靠繞圈。';
-  if(/挖深穴|高位/.test(t))                return '高位大水流，由中心快速向外繞到全部粉層都濕。';
-  if(/細水柱|細水流/.test(t))              return '維持細水柱繞圈，'+SPIRAL+'別沖破邊緣的粉牆。';
-  if(/大水流|快速|一鼓作氣|加快/.test(t))  return SPIRAL+'這段刻意快注，用水流動能把粉層翻起來。';
-  // 其餘注水段一律給預設螺旋：這就是本 App 的預設手勢，少給一行不如給正確的那一行
-  return SPIRAL+'慢繞，水柱不要斷。';
+  for(const [re,kind,r,text] of CIRC) if(re.test(t))return {kind,r,text};
+  return {kind:'spiral',r:85,text:SPIRAL+'慢繞，水柱不要斷。'};
+}
+/* 固定半徑的繞行不需要「向外再收回」的位移動畫，只讓外層轉圈 */
+const CIRC_FIXED={coin:1,half:1,two3:1,wet:1,swirl:1,center:1,drip:1,soak:1,wait:1};
+function applyCircle(s){
+  const c=circleHint(s);
+  $('circText').textContent=c.text;
+  const an=$('panim');
+  an.dataset.kind=c.kind;
+  if(CIRC_FIXED[c.kind])an.setAttribute('data-fixed','');else an.removeAttribute('data-fixed');
+  // 半徑小到會被大數字蓋住時，補一圈粉床外緣當比例尺
+  if(c.r<=55)an.setAttribute('data-small','');else an.removeAttribute('data-small');
+  $('paPath').setAttribute('r',c.r);
+  $('paDot').style.setProperty('--pa-r',c.r+'px');
+  return c;
 }
 
 /* 段落標題的口語版：唸「標籤，動作」兩件事就好。
@@ -1434,18 +1533,12 @@ function loop(){
   $('timer').textContent=fmt(t);
   $('timer').className='el '+(done?'done':running?'run':'');
 
-  /* 整杯進度：量條走的是時間（最貼近「還要站多久」），旁邊補上段數與累計水量 */
-  const pct=clamp(t/Math.max(1,P.plan),0,1)*100;
-  $('pbarFill').style.width=pct+'%';
-  $('pbar').classList.toggle('done',done);
-  $('pStep').textContent=done?'全部完成':`第 ${i+1} 段 / 共 ${P.steps.length} 段`;
-
   // 換段事件：語音 + 震動 + 音效
   if(i!==lastIdx){
     lastIdx=i;announced5=false;
     $('actText').textContent=s.action;
     $('flowText').textContent=s.flow;
-    $('circText').textContent=circleHint(s);
+    applyCircle(s);
     $('tipText').textContent=s.tip||'';
     remeasureHints();                            // tip 夾行的「更多」要跟著重算
     $('stepGoal').textContent='本段目標 '+s.target+' g';
@@ -1470,7 +1563,6 @@ function loop(){
   // 節拍器
   const lv=liveTarget(t,i);
   $('liveG').innerHTML=lv+'<small> g</small>';
-  $('pWater').innerHTML=`<b>${lv}</b> / ${P.total} g`;
   const frac=clamp(lv/P.total,0,1);
   $('ring').style.strokeDashoffset=RING_LEN*(1-frac);
   $('ring').style.stroke=done?'var(--ok)':(s.pour?'var(--crema)':'var(--water)');
@@ -2439,7 +2531,7 @@ HOME_TABS.forEach(([t],i)=>{$(t).onclick=()=>selTab(i);});
 /* ---- 長說明夾行：只有真的被裁到才掛「更多」。
    在 display:none 的分頁裡 scrollHeight 與 clientHeight 都是 0，量不到就先不標，
    等分頁顯示時再量一次 —— 寧可少一顆按鈕，也不要掛一顆按了沒東西的「更多」。 ---- */
-const HINTS=['processHint','originHint','dripperHint','masterHint','ratioHint','masterReco','tipText'];
+const HINTS=['processHint','originHint','dripperHint','masterHint','ratioHint','masterReco'];
 function remeasureHints(){
   HINTS.forEach(k=>{
     const el=$(k); if(!el||el.classList.contains('open'))return;
