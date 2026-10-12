@@ -476,7 +476,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     </div>
 
     <div class="setrow" style="margin-top:14px;border-top:1px solid var(--line)">
-      <div><div class="sl">常溫水留香預浸</div><div class="sd">熱水之前先用常溫水把粉潤開，留住輕香氣。常溫水會從總水量扣除。</div></div>
+      <div><div class="sl">常溫水留香預浸</div><div class="sd">熱水之前先用常溫水把粉潤開，留住輕香氣。常溫水算在總水量裡，秤全程不用歸零。</div></div>
       <button class="tgl" id="tglPreRoom" aria-label="常溫水留香預浸">💧</button>
     </div>
 
@@ -790,7 +790,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <ul class="kb">
         <li><b>做法</b>：熱水之前，先<b>慢慢注入常溫水</b>，注入的過程中用<b>筷子輕輕攪拌</b>咖啡粉。<b>水位高過咖啡粉約 0.5 公分</b>就停止注水，等常溫水<b>自然滴完</b>，之後照平常熟悉的沖煮方式繼續。</li>
         <li><b>用意是留香</b>：讓較輕的香氣不會在第一時間就被高溫帶走。</li>
-        <li><b>App 裡怎麼配合</b>：設定頁「這杯」有「常溫水留香預浸」開關。打開之後常溫水會<b>從總水量扣除</b>（取粉重 2 倍當估計值），熱水的各段目標跟著往下移；預覽頁會多出一張「開始前」卡片。這段<b>不計時</b>，碼錶仍從熱水第一滴開始。</li>
+        <li><b>App 裡怎麼配合</b>：設定頁「這杯」有「常溫水留香預浸」開關。打開之後常溫水<b>算在總水量裡</b>（取粉重 2 倍當估計值），它就是這杯的第一次注水，所以<b>秤全程不用歸零</b> —— 導航頁的每一個數字都是秤面該有的讀數，最後停在總水量就是你設定的粉水比。這段<b>不計時</b>，碼錶仍從熱水第一滴開始。</li>
         <li><b>來源</b>：這是使用者自己在試的手法，<b>不在任何逐字稿或其他來源裡</b>，也沒有對照實驗佐證。寫進來是為了讓流程完整，不代表它已被驗證。</li>
       </ul>
 
@@ -1198,13 +1198,20 @@ function calc(){
      但畫面要做加減就得有個數字，所以取粉重 2 倍當估計值（剛好是粉全濕、水面要浮起來的量），
      並在藍圖與預覽頁都明寫「實際以水位為準」，不讓這個估計值看起來像配方的一部分。
      上限 40% 是防呆：粉水比被鎖到極濃時，2 倍粉重可能吃掉大半總水量，熱水會不夠沖。
-     放在拿鐵牛奶量之後，才不會讓預浸的扣除污染咖啡液的估算（常溫水最後也會滴進下壺）。 */
+
+     ── 這裡刻意「不」把常溫水從 total 扣掉 ──────────────────────────
+     常溫水是真的注進粉層、也真的算在粉水比裡，所以它就是這杯的第一次注水。
+     舊版把 total 改成熱水量，導航頁「秤上現在應到」於是變成只算熱水的累計值，
+     但全檔從來沒有任何一句叫使用者把秤歸零（只有冰咖啡有，因為冰塊不過粉層）。
+     結果是：倒完常溫水時秤上已經有 44g，使用者追到最後一個目標時其實少倒了那 44g，
+     21.8g 粉的 1:16 實測變成 1:14 —— 配方對、記帳錯。
+     現在 total 一律是總水量，熱水預算另外放在 preRoom.hot，
+     段落目標則在產生之後整體平移，變成秤面的絕對讀數，全程不必歸零。 */
   let preRoom=null;
   if(S.preRoom){
     const pr=Math.min(Math.round(S.dose*2),Math.round(total*0.4));
     preRoom={g:pr,all:total,hot:total-pr};
-    logs.push(`常溫水預浸 ${pr}g（已從總水量扣除，熱水剩 ${total-pr}g）`);
-    total=preRoom.hot;
+    logs.push(`常溫水預浸 ${pr}g（算在總水量 ${total}g 內，熱水 ${total-pr}g）`);
   }
 
   // 5c) 防呆警示
@@ -1217,8 +1224,8 @@ function calc(){
     warns.push('粉層極厚，建議研磨調粗半格，否則水下不去反而過萃。');
   if(ratio<=6)
     warns.push('暴力濃縮模式流速極慢：秤到目標水量就立刻移開濾杯，尾段的乾澀不要留。');
-  if(preRoom && total < S.dose*3)
-    warns.push(`扣掉常溫水 ${preRoom.g}g 之後熱水只剩 ${total}g —— 咖啡粉本身就會吃掉約 ${S.dose*2}g，下壺幾乎接不到東西。請關掉常溫水預浸，或把粉水比拉長。`);
+  if(preRoom && preRoom.hot < S.dose*3)
+    warns.push(`扣掉常溫水 ${preRoom.g}g 之後熱水只剩 ${preRoom.hot}g —— 咖啡粉本身就會吃掉約 ${S.dose*2}g，下壺幾乎接不到東西。請關掉常溫水預浸，或把粉水比拉長。`);
   if(iced&&iced.hot < S.dose*3.5)
     warns.push(`熱水僅 ${iced.hot}g，扣掉咖啡粉持液 ${S.dose*2}g 後幾乎流不進下壺。請降低冰塊比例或拉長粉水比。`);
   if(mst.needSwitch&&!DRIPPERS[S.dripper]?.hasValve)
@@ -1246,8 +1253,12 @@ function calc(){
   }
   const gc=grindClicks();
 
-  // 7) 產生步驟（含等待滴乾，時間軸自動生成）
-  const steps=buildSteps(total,milk,bypass);
+  /* 7) 產生步驟（含等待滴乾，時間軸自動生成）
+     注水計畫只分配「熱水」那一部分；常溫水已經在秤上了，所以把每一段的目標
+     整體加上它，畫面上的數字才是秤面該有的讀數，最後一段剛好等於總水量。 */
+  const hotBudget = preRoom ? preRoom.hot : total;
+  const steps=buildSteps(hotBudget,milk,bypass);
+  if(preRoom) steps.forEach(s=>{s.target+=preRoom.g;});
 
   logs.push(`前段流速 ${frontRate()} g/s（${S.tweak>0?'放慢拉長攪拌走甜厚':S.tweak<0?'加快大水柱走酸亮':'中性基準'}）`);
 
@@ -1498,7 +1509,8 @@ function renderBlueprint(){
     : `留空時由引擎依烘焙度、濾杯與風味校正器運算。常見安全區間是 1:15～1:18；想要濃一點可往 1:12 到 1:14 走，${ROASTS[S.roast].name}的基準是 1:${ROASTS[S.roast].baseRatio}。`;
   $('latteBox').style.display=S.master==='latte'?'block':'none';
   $('icedBox').style.display=S.master==='iced'?'block':'none';
-  $('waterLabel').textContent=(P.iced||P.preRoom)?'熱水注入量 ':(P.bypass?'過粉層水量 ':'總水量 ');
+  /* 預浸不再改變這個數字的意義（它仍是總水量，含常溫水），所以不列進來 */
+  $('waterLabel').textContent=P.iced?'熱水注入量 ':(P.bypass?'過粉層水量 ':'總水量 ');
   $('warnBox').innerHTML=(P.warns||[]).map(w=>`<div class="warn"><b>⚠ 系統攔截：</b>${w}</div>`).join('');
   const bb=$('bypassBox');
   if(P.bypass){
@@ -1509,9 +1521,9 @@ function renderBlueprint(){
   const pb=$('preRoomBox');
   if(P.preRoom){
     pb.style.display='block';
-    pb.innerHTML=`💧 <b>常溫水留香預浸</b>：總水量 ${P.preRoom.all}g ＝ 常溫水 <b>約 ${P.preRoom.g}g</b> ＋ 熱水 <b>${P.preRoom.hot}g</b>。<br>
-    常溫水那段<b>不計時、不用秤</b>，實際以<b>水位高過粉面約 0.5 公分</b>為準；${P.preRoom.g}g 只是粉重 2 倍的估計值。<br>
-    等常溫水自然滴完再按開始，碼錶從熱水第一滴算起。`;
+    pb.innerHTML=`💧 <b>常溫水留香預浸</b>：總水量 <b>${P.preRoom.all}g</b>（1:${P.ratio}）＝ 常溫水 <b>約 ${P.preRoom.g}g</b> ＋ 熱水 <b>${P.preRoom.hot}g</b>。<br>
+    <b>秤不用歸零</b> —— 倒完常溫水就直接接著倒熱水，導航頁給的每一個數字都是<b>秤面該有的讀數</b>，最後停在 ${P.preRoom.all}g 就是 1:${P.ratio}。<br>
+    常溫水那段<b>不計時</b>，倒多少以<b>水位高過粉面約 0.5 公分</b>為準；${P.preRoom.g}g 只是粉重 2 倍的估計值。等它自然滴完再按開始，碼錶從熱水第一滴算起。`;
   }else pb.style.display='none';
   const ib=$('icedBox2');
   if(P.iced){
@@ -1766,7 +1778,7 @@ function renderPreview(){
       ['慢慢注入常溫水',`約 ${P.preRoom.g}g（估計值，實際看水位）`,'水柱放到最細，不要沖散粉層。'],
       ['邊注水邊用筷子輕輕攪拌','把粉全部潤濕','輕輕的就好，不要把粉層攪爛。'],
       ['水位高過粉面約 0.5 公分就停','這是真正的停止條件','不用秤，用眼睛看水面剛浮起來一點點。'],
-      ['等常溫水自然滴完','不計時','全部滴完再按開始，之後照平常的手法沖。']
+      ['等常溫水自然滴完','不計時 · 秤不要歸零','全部滴完再按開始。秤上那些常溫水要留著算 —— 之後每一段的目標都已經把它含進去了。']
     ];
     $('pvPreSteps').innerHTML=PRE.map((p,i)=>`<div class="pvstep">
       <div class="no2">${i+1}</div>
@@ -1779,7 +1791,8 @@ function renderPreview(){
   }
   $('pvTotal').textContent=fmt(P.plan);
   $('pvSteps').innerHTML=P.steps.map((s,i)=>{
-    const prev=i>0?P.steps[i-1].target:0;
+    /* 起點不是 0：開了常溫水預浸的話，秤上一開始就已經有那些水 */
+    const prev=i>0?P.steps[i-1].target:(P.preRoom?P.preRoom.g:0);
     const add=s.pour&&s.target>prev?s.target-prev:0;
     return `<div class="pvstep ${add?'pour':''}">
       <div class="no2">${i+1}</div>
@@ -2663,7 +2676,7 @@ $('tglPreRoom').onclick=e=>{
   S.preRoom=!S.preRoom;
   e.currentTarget.classList.toggle('on',S.preRoom);
   calc();
-  toast(S.preRoom?'已加入常溫水預浸，熱水量已扣除':'已取消常溫水預浸');
+  toast(S.preRoom?'已加入常溫水預浸，秤不用歸零':'已取消常溫水預浸');
 };
 /* 粉水比手動鎖定：欄位留空即回到引擎自動運算 */
 $('ratioLock').addEventListener('input',()=>{
