@@ -302,7 +302,6 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .nextline .nf{font-family:var(--mono);font-size:.92rem;font-weight:800;color:var(--water);flex-shrink:0}
 
 /* 完成 & 日誌 */
-.finish{display:none;background:rgba(143,191,127,.08);border:1px solid rgba(143,191,127,.4);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
 .stars{font-size:1.7rem;letter-spacing:.15em;cursor:pointer;user-select:none;margin:8px 0}
 .stars span{color:#4a3a28}.stars span.lit{color:var(--crema)}
 .btn-sm{background:var(--panel2);border:1px solid var(--crema);color:var(--crema);border-radius:10px;padding:9px 18px;font-size:.85rem;font-weight:700;cursor:pointer}
@@ -314,6 +313,10 @@ input[type=range]{width:100%;accent-color:var(--copper);height:26px}
 .log-acts{display:flex;gap:6px;margin-top:7px}
 .btn-mini{flex-shrink:0;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:5px 11px;font-size:.7rem;font-weight:700;cursor:pointer}
 .btn-mini.recall{border-color:var(--crema);color:var(--crema)}
+/* 校準的一鍵套用是主要動作，不是日誌那排次要按鈕：
+   給它足夠的觸控高度（.btn-mini 的 27px 在手機上按不準）並拉開與上一行文字的距離 */
+.btn-mini.apply-calib{display:inline-flex;align-items:center;min-height:40px;margin-top:8px;
+  padding:0 16px;font-size:.78rem;border-color:var(--crema);color:var(--crema);background:rgba(216,155,90,.12)}
 .btn-mini.del{border-color:rgba(227,107,79,.5);color:var(--hot)}
 .btn-mini:active{transform:scale(.93)}
 input[type=text]{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:1rem;outline:none}
@@ -601,8 +604,10 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       </div>
       <div class="btn-row" style="margin-top:10px">
         <button class="btn-mini" id="grClear">清除設定</button>
+        <button class="btn-mini" id="calibReset">校準歸零</button>
       </div>
       <div class="hint" id="grHint"></div>
+      <div class="reco" id="calibState"></div>
     </details>
   </div>
 
@@ -719,13 +724,45 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <li>導航頁顯示的流速已依所選手法自動切換模型，跟著節拍器的數字追即可。</li>
       </ul>
 
-      <div class="kb-h">風味排除表</div>
+      <div class="kb-h">風味排除表 ①：先分兩軸</div>
       <ul class="kb">
-        <li><b>偏苦澀</b>（過萃）→ 流速調慢 1～2 g/s、減少繞圈圈數、縮小繞圈範圍，或研磨調粗。</li>
-        <li><b>偏酸、口感單薄</b>（萃取不足）→ 提高流速增強攪動、增加繞圈密度，或研磨調細、水溫調高。</li>
-        <li><b>尾段出現澀感</b> → 提早移開濾杯，不要等最後那段細滴漏完。</li>
-        <li><b>前段注水速度是最有效的單一槓桿</b>：同豆同研磨同水溫的對照實驗裡，悶蒸後第一段快注＝酸質明亮清爽，慢注＝甜感與厚實度明顯上升。本 App 的風味滑桿直接連動這一段的節拍器流速，範圍 2.5～4.5 g/s：往「甜感」推是放慢、往「果酸」推是加快。唯一要注意的是：<b>水量放小時繞圈的攪拌力道仍要夠</b>，否則得到的只是萃取不均，不是甜。</li>
-        <li><b>段數也是槓桿</b>：段數越多、總接觸時間越長，萃取進程越往後段（甜）推。太酸時把兩段改三段、三段改四段，比直接動水溫安全得多。</li>
+        <li><b>酸 ↔ 苦 是「萃取率」，薄 ↔ 厚 是「濃度」</b> —— 這是最常被混在一起的兩件事。兩個軸各有各的槓桿，答錯軸就會越調越糟。</li>
+        <li><b>又酸又薄</b> → 典型萃取不足。<b>研磨調細 1 格</b>，先只動這一項。</li>
+        <li><b>酸、但喝起來是厚的</b> → 萃取不足，可是濃度已經夠了。<b>研磨調細</b>就好，<b>千萬不要減水</b> —— 減水只會更濃更酸。</li>
+        <li><b>又苦又厚</b> → 典型過萃。<b>研磨調粗 1 格</b>，尾段變成細滴漏時就提早移開濾杯。</li>
+        <li><b>苦、但喝起來是薄的</b> → <b>這不是過萃</b>（過萃會又苦又厚）。多半是水溫太高、豆子本身深焙的焦苦，或細粉帶出的雜苦。<b>先降水溫 2°C</b>，研磨不要動 —— 調粗只會更薄。</li>
+        <li><b>不酸不苦，就是太淡</b> → 萃取方向是對的，<b>不要動研磨</b>（調細會把已經對了的平衡調到苦）。這是純濃度問題：<b>粉水比縮短</b>，或維持比例把粉加上去。</li>
+        <li><b>不酸不苦，就是太濃</b> → <b>粉水比拉長</b>，研磨與水溫都別動。</li>
+      </ul>
+
+      <div class="kb-h">風味排除表 ②：槓桿的強弱順序（一次只動一項，從上面動起）</div>
+      <ul class="kb">
+        <li><b>1. 研磨度 —— 最強，也最重現得了</b>。酸就調細、苦就調粗，一次一格。它同時改變萃取率與流速，所以永遠先動它。</li>
+        <li><b>2. 水溫 —— 一次 ±2°C</b>。它幾乎只動萃取率、不動濃度，所以上面「酸但厚」「苦但薄」那兩格的正解就是它。</li>
+        <li><b>3. 段數／接觸時間</b>。段數越多、總接觸時間越長，萃取進程越往後段（甜）推。太酸時把兩段改三段、三段改四段，比直接動水溫溫和。</li>
+        <li><b>4. 注水速度與繞圈 —— 最弱，而且最難複製</b>。每天的手感都不一樣，拿它當主要槓桿等於每天在換配方。前面三項都試過再動它。</li>
+        <li><b>粉水比不在這個排序裡，因為它是另一個軸</b>：它是唯一只動濃度、不動萃取率的槓桿。太淡太濃找它，<b>酸苦不要找它</b>。</li>
+      </ul>
+
+      <div class="kb-h">風味排除表 ③：注水速度的方向（很多地方寫反）</div>
+      <ul class="kb">
+        <li><b>前段注水快＝酸亮，慢＝甜厚</b>。同豆同研磨同水溫的對照實驗裡，悶蒸後第一段快注＝酸質明亮清爽，慢注＝甜感與厚實度明顯上升。本 App 的風味滑桿就是直接連動這一段的節拍器流速（2.5～4.5 g/s）：往「甜感」推是放慢、往「果酸」推是加快。</li>
+        <li><b>所以方向是：太酸要放慢，太苦要加快</b>。這跟直覺相反 —— 很多配方（包括本 App 的舊版說明）寫成「太酸就加快增強攪動」，是反的。放慢＝拉長前段的攪拌與接觸＝萃得更多。</li>
+        <li><b>不要用「繞快一點」來增加萃取</b>。本頁前面那份實測：擾動頻率從每秒一下提高到每秒兩下，TDS 反而從 1.04 掉到 0.96 —— 手上繞得快，濾杯裡不見得擾動得快。想多萃就調細研磨或加一段注水，不要靠繞更快。</li>
+        <li><b>水量放小時繞圈的攪拌力道仍要夠</b>，否則得到的只是萃取不均，不是甜。</li>
+      </ul>
+
+      <div class="kb-h">風味排除表 ④：澀跟苦是兩回事</div>
+      <ul class="kb">
+        <li><b>苦</b>多半是過萃、深焙或水溫太高；<b>澀</b>（口腔發乾、像吃到沒熟的柿子）多半是雜質被帶出來，跟泡了多久沒有直接關係。所以兩者的解法不一樣。</li>
+        <li><b>澀的四個常見來源</b>：① 尾段沒及早移開濾杯 —— 最後那段細滴幾乎只剩澀味 ② 磨豆機殘粉與細粉，沖之前先推 3～5 顆豆 ③ 濾紙沒洗，紙味與黏在紙上的細粉 ④ 水質，礦物質太低的純水容易出澀。</li>
+        <li><b>研磨調粗對澀不一定有用</b>：細粉是主因時，調粗只減少一點點。先把上面四項排掉比較快。只有在<b>流速明顯比藍圖慢</b>的時候調粗才真的對症 —— 那是細粉把濾紙糊住了。</li>
+      </ul>
+
+      <div class="kb-h">不想自己查表的話</div>
+      <ul class="kb">
+        <li>沖完在完成頁按一下「偏酸／剛剛好／偏苦／發澀」，再選一下濃度，App 就會把上面這張表套到你這一杯上，直接告訴你下一杯該怎麼調。<b>有設定磨豆機還會算出要轉到第幾刻度，而且可以一鍵套用</b>，下次開啟藍圖就是調整後的參數。</li>
+        <li><b>碼錶的實際總時間也會一起納入判斷</b>：比藍圖慢很多通常是細粉堵住、比藍圖快很多通常是走了通道，這兩種情況的解法跟「單純過萃／萃取不足」並不一樣 —— 例如流速已經偏慢卻還是酸，這時候再調細只會更糟。</li>
       </ul>
     </details>
   </div>
@@ -896,11 +933,22 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
       <span class="chip" id="secsEdit">手動修正</span>
     </div>
 
-    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">實際喝起來偏哪一邊？（手動調整，會一起記下來）</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:5px">實際喝起來偏哪一邊？（會一起記下來）</div>
     <div class="chips" id="verdictRow" style="margin-top:0;margin-bottom:4px">
-      <span class="chip" data-v="sour">偏酸 / 太薄</span>
+      <span class="chip" data-v="sour">偏酸</span>
       <span class="chip" data-v="good">剛剛好</span>
-      <span class="chip" data-v="bitter">偏苦 / 澀</span>
+      <span class="chip" data-v="bitter">偏苦</span>
+      <span class="chip" data-v="astringent">發澀</span>
+    </div>
+    <!-- 濃度是獨立的第二軸：酸↔苦是萃取率，薄↔厚是濃度，分開問才答得準。
+         預設隱藏，選完風味才出現 —— 兩列 chip 一起攤開會讓面板一打開就很滿。 -->
+    <div id="bodyWrap" class="hide">
+      <div style="font-size:.72rem;color:var(--muted);margin:8px 0 5px">喝起來的濃度呢？（選填，但填了建議會準很多）</div>
+      <div class="chips" id="bodyRow" style="margin-top:0;margin-bottom:4px">
+        <span class="chip" data-b="thin">太淡</span>
+        <span class="chip" data-b="ok">剛好</span>
+        <span class="chip" data-b="thick">太濃</span>
+      </div>
     </div>
     <div class="adjust" id="fsAdjust"></div>
 
@@ -1022,12 +1070,18 @@ function fillSelect(sel,db){
 /* ============================================================
    核心運算引擎
    ============================================================ */
-const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null, grinder:null, preRoom:false };
+const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null, grinder:null, preRoom:false, grindAdj:0, tempAdj:0, grindAdjFor:null };
+/* 校準偏移是針對某一支豆調出來的。換豆之後它不會自動失效（同一支豆換手法重沖仍然有效），
+   但一定要讓使用者看見它還在 —— 靜默沿用到別支豆上就是那種最難抓的錯。 */
+const beanKey=()=>`${S.roast}|${S.process}|${S.origin}`;
 let P = null; // 最新運算結果
 
 /* 把文字研磨度換算成使用者磨豆機上的刻度。
    未設定磨豆機、或濾掛這種預磨無法調整的情況回傳 null。
-   step＝一「格」等於幾刻度，校準建議會用它把「調細一格」講成實際轉幾格。 */
+   step＝一「格」等於幾刻度，校準建議會用它把「調細一格」講成實際轉幾刻度。
+   raw＝還沒加上校準偏移、也還沒捨入夾限的基準值。clicksAfter() 用它推算
+   「再調 n 格會變成幾刻度」—— 必須跟 clicks 走同一條算式，否則畫面上說
+   「轉到 23」、套用後卻顯示 24。 */
 function grindClicks(){
   const g=S.grinder;
   if(!g||S.master==='dripbag')return null;
@@ -1039,9 +1093,12 @@ function grindClicks(){
   if(S.master==='latte'&&S.dose>=30)c=0.35;        // 粉層過厚時強制回到中細，與文字敘述一致
   if(!mst.grind&&DRIPPERS[S.dripper]?.grindNote)c-=0.07;  // 流速極快的濾杯要再細一點
   const step=Math.max(1,Math.round(span/10));
-  /* 滑桿往「甜」推＝研磨調細＝刻度數字變小 */
-  const clicks=clamp(Math.round(g.min+c*span-S.tweak*step),g.min,g.max);
-  return {clicks,step,min:g.min,max:g.max,name:g.name||''};
+  /* 滑桿往「甜」推＝研磨調細＝刻度數字變小。
+     grindAdj 是校準迴圈累積下來的偏移（正＝粗），與滑桿各自獨立相加，不互相掩蓋 ——
+     少了它，建議說「從 14 轉到 12」，下一杯藍圖還是顯示 14，迴圈永遠回到原點。 */
+  const raw=g.min+c*span-S.tweak*step;
+  const clicks=clamp(Math.round(raw+S.grindAdj*step),g.min,g.max);
+  return {clicks,step,min:g.min,max:g.max,name:g.name||'',raw};
 }
 
 function calc(){
@@ -1075,6 +1132,9 @@ function calc(){
   if(mst.tempMod){temp+=mst.tempMod;logs.push(`手法補償 ${mst.tempMod>0?'+':''}${mst.tempMod}°C（${mst.tempLog}）`);}
   if(mst.minTemp&&temp<mst.minTemp){temp=mst.minTemp;logs.push(mst.tempLog);}
   if(mst.tempFixed){temp=mst.tempFixed;logs.push(`自訂手法固定水溫 ${temp}°C`);}
+  /* 校準偏移放在所有矩陣與手法覆寫之後 —— 放前面會被 tempFixed / minTemp 直接洗掉。
+     這不是改水溫矩陣，是使用者自己依上一杯的結果疊上去的修正量，性質同 ratioOverride。 */
+  if(S.tempAdj){temp+=S.tempAdj;logs.push(`校準水溫 ${S.tempAdj>0?'+':''}${S.tempAdj}°C（依上一杯回饋）`);}
   temp=clamp(Math.round(temp),75,100);
 
   // 5) 粉水比：濾杯幾何 + 風味
@@ -1177,6 +1237,12 @@ function calc(){
   if(S.master!=='dripbag'){
     if(S.tweak>0)grind+='（微調細 1 格增甜）';
     if(S.tweak<0)grind+='（微調粗 1 格增亮）';
+    /* 沒設定磨豆機就看不到刻度，校準偏移只能靠這行文字讓人知道自己調到哪了 */
+    if(S.grindAdj){
+      const n=Math.abs(S.grindAdj);
+      grind+=`（校準：比基準${S.grindAdj<0?'細':'粗'} ${n%1?n.toFixed(1):n} 格）`;
+      logs.push(`研磨校準 ${S.grindAdj<0?'細':'粗'} ${n%1?n.toFixed(1):n} 格（依上一杯回饋）`);
+    }
   }
   const gc=grindClicks();
 
@@ -1407,6 +1473,15 @@ function renderBlueprint(){
   $('outGrind').innerHTML=P.gc
     ? `${esc(P.grind)}<span class="clicks">${P.gc.clicks} 刻度</span>`
     : esc(P.grind);
+  /* 偏移要看得見，否則它就是一個會默默改動藍圖的隱藏狀態 */
+  const adj=[];
+  if(S.grindAdj)adj.push(`研磨比基準${S.grindAdj<0?'細':'粗'} ${Math.abs(S.grindAdj)} 格`);
+  if(S.tempAdj)adj.push(`水溫 ${S.tempAdj>0?'+':''}${S.tempAdj}°C`);
+  const stale = adj.length && S.grindAdjFor && S.grindAdjFor!==beanKey();
+  $('calibState').innerHTML = !adj.length ? ''
+    : stale
+      ? `⚠ 目前仍套用著校準：<b>${adj.join('、')}</b>，但那是為<b>${esc(S.grindAdjFor.split('|').map((k,i)=>[ROASTS,PROCESSES,ORIGINS][i][k]?.name.split('（')[0]||k).join('·'))}</b>調出來的，你現在換豆了。沿用通常還是對的方向，但想從頭校準就按下面的「校準歸零」。`
+      : `🎯 目前套用的校準：<b>${adj.join('、')}</b>（來自你按下的「一鍵套用」。換豆子想重來，按下面的「校準歸零」）。`;
   $('grHint').innerHTML = P.gc
     ? `目前換算：<em>${P.gc.clicks} 刻度</em>${P.gc.name?`（${esc(P.gc.name)}）`:''}。你的範圍 ${P.gc.min}–${P.gc.max}，一「格」＝ ${P.gc.step} 刻度，校準建議會照這個講。`
     : (S.grinder ? '這個手法的研磨度不可調整（濾掛是預磨的），所以不給刻度。'
@@ -1781,8 +1856,7 @@ $('resetBtn').onclick=()=>{
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
   $('finishBox').classList.remove('show');
   brewSecs=0;verdict='';
-  [...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
-  $('fsAdjust').classList.remove('show');
+  resetVerdict();
   loop();
 };
 $('fsClose').onclick=()=>$('finishBox').classList.remove('show');
@@ -1822,9 +1896,17 @@ $('pvStart').onclick=()=>{
 };
 $('backBtn').onclick=()=>history.back();
 
+function resetVerdict(){
+  verdict='';bodyVerdict='';appliedKey='';
+  [...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
+  [...$('bodyRow').children].forEach(c=>c.classList.remove('on'));
+  $('bodyWrap').classList.add('hide');
+  $('fsAdjust').classList.remove('show');$('fsAdjust').innerHTML='';
+}
 function finishBrew(){
   running=false;clearInterval(tick);
   $('playBtn').textContent='開始';$('playBtn').classList.remove('pause');
+  resetVerdict();   // 每一杯都要從空白開始，否則會看到上一杯的選擇與建議
   const ft=flavorTarget();
   $('fsTarget').textContent=ft.label;
   $('fsTargetDetail').textContent=ft.detail;
@@ -2206,7 +2288,7 @@ function hintZoom(){
    ============================================================ */
 const LOG_KEY='pourmaster_logs_v1';
 const SET_KEY='pourmaster_setting_v1';
-let rating=0, verdict='', brewSecs=0;
+let rating=0, verdict='', bodyVerdict='', brewSecs=0;
 
 /* 上一次的設定：每次運算後自動寫回，下次開啟直接沿用 */
 function snapshot(){
@@ -2220,6 +2302,12 @@ function applySettings(d,silent){
   S.ratioOverride = S.ratioOverride ? clamp(+S.ratioOverride,8,20) : null;
   S.grinder = (S.grinder&&S.grinder.max>S.grinder.min) ? S.grinder : null;
   S.preRoom = !!S.preRoom;
+  /* 校準欄位刻意不走上面那個白名單迴圈：那個迴圈是「d 沒有這個欄位就不動 S」，
+     拿它來重現一筆沒有校準欄位的舊日誌時，會把當前這支豆的偏移留著套到舊配方上 ——
+     等於用新豆的校準去跑舊的一杯。這裡一律以 d 為準，缺欄位就是 0。 */
+  S.grindAdj    = clamp(+d.grindAdj||0,-4,4);
+  S.tempAdj     = Math.round(clamp(+d.tempAdj||0,-4,4));
+  S.grindAdjFor = d.grindAdjFor||null;
   $('tglPreRoom').classList.toggle('on',S.preRoom);
   $('dose').value=S.dose;$('tweak').value=S.tweak;$('ratioLock').value=S.ratioOverride??'';
   $('grName').value=S.grinder?.name??'';
@@ -2239,7 +2327,8 @@ function loadSettings(){
   try{return applySettings(JSON.parse(localStorage.getItem(SET_KEY)),true);}catch(e){return false;}
 }
 
-const VERDICT_TXT={sour:'偏酸',good:'剛好',bitter:'偏苦'};
+const VERDICT_TXT={sour:'偏酸',good:'剛好',bitter:'偏苦',astringent:'發澀'};
+const BODY_TXT={thin:'偏淡',ok:'濃度剛好',thick:'偏濃'};
 
 /* ============================================================
    研磨度校準迴圈
@@ -2249,43 +2338,139 @@ const VERDICT_TXT={sour:'偏酸',good:'剛好',bitter:'偏苦'};
       過去沒有被記錄下來，所以日誌只能「重現」而無法「進步」。
    ── 時間門檻依總水量縮放：兩人份本來就該比一人份慢，不能用同一個絕對值判斷。
    ============================================================ */
+/* 這兩格是「時間已經把答案說出來了」的情況，兩軸與單軸共用同一套說法。
+   它們也是改動前方向寫反的兩格：流速已經偏慢還叫人調細、流速已經偏快還叫人調粗。 */
+const SOUR_SLOW=(out,T)=>out('泡得夠久了還是酸 —— 問題不在時間',
+  '流速已經比藍圖慢很多，<b>這時候再把研磨調細會塞住、走通道</b>，只會更不均勻。依序試：① <b>水溫調高 2°C</b> ② 繞圈繞得更紮實 —— 要垂直往下把粉床帶起來，不是把手繞得更快 ③ 確認豆子是不是太新鮮、排氣還沒完（剛烘好的豆子會把水頂開）。',T(2));
+const BITTER_FAST=(out,T)=>out('流得很快卻還是苦 —— 這不是泡太久的苦',
+  '流速比藍圖快，<b>再把研磨調粗只會更快、更容易走通道</b>。流得快卻苦，常見的真兇是細粉、水溫太高，或豆子本身的焦苦。依序試：① <b>水溫降 2°C</b> ② 沖之前先推 3～5 顆豆的殘粉 ③ 確認粉面有沒有被水柱打穿。',T(-2));
+
 function calibrate(l){
-  if(!l||!l.verdict)return null;
+  /* 白名單而不是 !l.verdict：未知的值（舊版寫進去的、或手動改壞的）會一路穿到
+     最後那個 return，被當成「剛剛好」靜默給出錯誤建議。 */
+  if(!l||!VERDICT_TXT[l.verdict])return null;
   const plan=l.plan||0, secs=l.secs||0;
   const slow = plan && secs > plan+40;    // 比藍圖慢很多 → 流速偏慢
   const fast = plan && secs < plan-40;    // 比藍圖快很多 → 流速偏快
-  /* dir：研磨要往哪個方向動（-1 調細、+1 調粗、0 不動）；half：只動半格。
-     設定過磨豆機時，renderCalibration 會把它換算成實際要轉到第幾刻度。 */
+  const body = BODY_TXT[l.body] ? l.body : '';   // 舊日誌沒有這一欄 → 退回單軸
+  /* apply 一次只提一個變數，dir/half 由它推導出來（dir 只給研磨方向用，0＝不換算刻度）。
+     刻意不提供「推風味滑桿」當套用動作：S.tweak 會一次改動水溫、粉水比、研磨與
+     前段流速四項，那跟這裡反覆強調的「一次只動一項」直接牴觸。 */
+  const G=d=>({kind:'grind',delta:d,label:`研磨${d<0?'調細':'調粗'} ${Math.abs(d)} 格`});
+  const R=d=>({kind:'ratio',delta:d,label:`粉水比${d<0?'縮短':'拉長'} ${Math.abs(d)}`});
+  const T=d=>({kind:'temp', delta:d,label:`水溫 ${d>0?'+':''}${d}°C`});
+  const out=(t,b,apply)=>({t,b,apply:apply||null,
+    dir : apply&&apply.kind==='grind' ? Math.sign(apply.delta) : 0,
+    half: !!(apply&&apply.kind==='grind'&&Math.abs(apply.delta)===0.5)});
+
+  /* 澀跟苦是兩回事：苦是萃過頭，澀多半是尾段、細粉、濾紙或水質把雜質帶出來。
+     濃度不改變澀的成因，所以三種濃度合併成同一支。 */
+  if(l.verdict==='astringent'){
+    return out('澀不是過萃，是雜質被帶出來了',
+      slow
+        ? '流速已經比藍圖慢，最後那段滴下來的幾乎只剩澀味 —— 先做這一項：<b>尾段變成細滴漏時就把濾杯移開</b>，不要等它滴完。其餘三個常見來源：磨豆機殘粉（沖之前先推 3～5 顆豆）、濾紙沒洗（熱水由中心向外淋濕，下壺的水記得倒掉）、水質（礦物質太低的水容易出澀）。'
+        : '依序檢查：① <b>尾段細滴漏時提早移開濾杯</b>，不要等滴完 ② 磨豆機殘粉 —— 沖之前先推 3～5 顆豆 ③ 濾紙沒洗 ④ 水質，純水與礦物質太低的水容易出澀。<b>研磨調粗對澀不一定有用</b>：細粉是主因時調粗只減少一點點，先把上面四項排除掉比較快。',
+      slow ? G(1) : null);
+  }
+
+  /* 沒填濃度（含所有舊日誌）：原本的單軸邏輯，文字一字不動 */
+  if(!body){
+    if(l.verdict==='sour'){
+      if(slow)return SOUR_SLOW(out,T);
+      return fast
+        ? out('流速太快，水還沒把東西帶出來就走了','研磨調細一格。這是萃取不足最直接的解，先只動這一項。',G(-1))
+        : out('萃取停在前段','依序試：① 研磨調細一格 ② 把注水段數加一段（拉長接觸時間）③ 前段注水放慢（慢注＝甜厚，快注＝酸亮）。一次只動一項，才知道是誰的功勞。',G(-1));
+    }
+    if(l.verdict==='bitter'){
+      if(fast)return BITTER_FAST(out,T);
+      return slow
+        ? out('流速太慢，泡太久了','研磨調粗一格，並且尾段變成細滴漏時就提早把濾杯移開，別等它滴完。',G(1))
+        : out('萃取推過頭了','依序試：① 研磨調粗一格 ② 減少注水段數或縮小繞圈範圍 ③ 前段注水加快（快注＝酸亮，慢注＝甜厚）。細粉過多也會苦，磨豆機記得先推殘粉。',G(1));
+    }
+    return slow
+      ? out('味道對了，但流速偏慢','風味沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。',G(0.5))
+      : out('這組參數是對的，記下來','想再往上挑戰的話：研磨再細半格試試看能不能萃出更多甜感與厚實度，但只要開始出現苦味就退回這一格。這一格就是這支豆子的答案。',G(-0.5));
+  }
+
+  /* 兩軸：酸↔苦是「萃取率」，薄↔厚是「濃度」，兩件事要分開回答。
+     綁成一軸最常見的後果就是以為萃取不足而一路調細，最後調到苦。 */
+  const tm = fast ? '　實際時間比藍圖快，順便確認粉面有沒有被水柱打穿、粉層有沒有被沖出溝。'
+           : slow ? '　實際時間比藍圖慢，細粉偏多，調粗也會順便把時間拉回區間。' : '';
   if(l.verdict==='sour'){
-    return fast
-      ? {t:'流速太快，水還沒把東西帶出來就走了',b:'研磨調細一格。這是萃取不足最直接的解，先只動這一項。',dir:-1}
-      : {t:'萃取停在前段',b:'依序試：① 研磨調細一格 ② 把注水段數加一段（拉長接觸時間）③ 風味滑桿往「甜／醇厚」推一格。一次只動一項，才知道是誰的功勞。',dir:-1};
+    if(slow)return SOUR_SLOW(out,T);
+    return body==='thin'
+      ? out('典型萃取不足：又酸又薄','水還沒把東西帶出來就走了。<b>研磨調細 1 格</b>，先只動這一項。'+tm,G(-1))
+      : out('萃取不足，但濃度是夠的','這一格最容易做錯：酸代表萃取不足，厚代表濃度已經夠了。<b>研磨調細 1 格</b>就好 —— <b>千萬不要減水</b>，減水只會更濃更酸。還不夠的話下一輪再把水溫 +2°C 或加一段注水。'+tm,G(-1));
   }
   if(l.verdict==='bitter'){
-    return slow
-      ? {t:'流速太慢，泡太久了',b:'研磨調粗一格，並且尾段變成細滴漏時就提早把濾杯移開，別等它滴完。',dir:1}
-      : {t:'萃取推過頭了',b:'依序試：① 研磨調粗一格 ② 減少注水段數或縮小繞圈範圍 ③ 風味滑桿往「果酸」推一格。細粉過多也會苦，磨豆機記得先推殘粉。',dir:1};
+    if(fast)return BITTER_FAST(out,T);
+    if(body==='thin'){
+      return slow
+        ? out('又苦又薄而且流得很慢：細粉把濾紙糊住了','薄表示沒萃到多少東西，苦卻跑出來了 —— 這不是泡太久，是細粉堵住水路、水卡在粉層裡。<b>研磨調粗 1 格</b>，並在沖之前先推 3～5 顆豆的殘粉。',G(1))
+        : out('苦但薄 —— 這不是過萃','過萃會又苦又厚。苦而薄通常是另外三件事：<b>水溫太高</b>、豆子本身深焙的焦苦、或細粉帶出的雜苦。<b>先把水溫降 2°C</b>，研磨不要動 —— 調粗只會更薄。',T(-2));
+    }
+    return out('典型過萃：又苦又厚','萃過頭了。<b>研磨調粗 1 格</b>，先只動這一項；尾段變成細滴漏時提早把濾杯移開。'+tm,G(1));
   }
+  if(body==='thin')
+    return out('萃取是對的，只是太淡','酸苦都沒問題，代表研磨與水溫都對了 —— <b>不要動研磨</b>，調細會把它調到苦。這是單純的濃度不足：<b>粉水比縮短 1</b>（或維持比例把粉加上去）。',R(-1));
+  if(body==='thick')
+    return out('萃取是對的，只是太濃','味道沒問題，只是要稀一點。<b>粉水比拉長 1</b>，研磨與水溫都不要動。',R(1));
   return slow
-    ? {t:'味道對了，但流速偏慢',b:'風味沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。',dir:1,half:true}
-    : {t:'這組參數是對的，記下來',b:'想再往上挑戰的話：研磨再細半格試試看能不能萃出更多甜感與厚實度，但只要開始出現苦味就退回這一格。這一格就是這支豆子的答案。',dir:-1,half:true};
+    ? out('味道對了，但流速偏慢','風味與濃度都沒問題就先別動。若想更保險，研磨調粗半格把時間拉回藍圖區間。',G(0.5))
+    : out('這一組就是這支豆子的答案','酸甜與濃度都對了，把參數記下來。想再往上挑戰：研磨再細半格看能不能多一點甜感與厚實度，一出現苦味就退回這一格。',G(-0.5));
+}
+
+/* 把「一格」換算成使用者磨豆機上要轉到的刻度 —— 這是整個校準迴圈的最後一哩。
+   設定頁卡片與完成面板共用這一份，兩邊的講法才不會不一致。 */
+/* 再加 n 格校準之後會落在第幾刻度。刻意用 gc.raw 重跑 grindClicks 的算式，
+   而不是拿 gc.clicks 去加減 —— 後者在半格與邊界的情況會跟實際結果差一刻度。 */
+function clicksAfter(gc,deltaSteps){
+  return clamp(Math.round(gc.raw+(S.grindAdj+deltaSteps)*gc.step),gc.min,gc.max);
+}
+function clickLine(c,gc){
+  if(!gc||!c.apply||c.apply.kind!=='grind')return '';
+  const to=clicksAfter(gc,c.apply.delta);
+  return to===gc.clicks
+    ? `<br>⚠ 你的磨豆機已經到範圍邊界（${gc.clicks} 刻度），這個方向轉不動了 —— 改調其他項目，或放寬手沖刻度範圍。`
+    : `<br>👉 你的磨豆機：<b>從 ${gc.clicks} 轉到 ${to} 刻度</b>（${Math.abs(to-gc.clicks)} 刻度）。`;
+}
+
+/* 一個建議的身分：同一份診斷 + 同一個動作。用來擋重複套用。 */
+let appliedKey='';
+const calibKey=c=>c&&c.apply?`${c.t}|${c.apply.kind}|${c.apply.delta}`:'';
+
+/* 一鍵套用的按鈕（或「這一格不能自動套用」的原因）。
+   不能套用時把原因講出來，不要給一顆按下去沒反應的按鈕。 */
+function applyHint(c){
+  if(!c||!c.apply)return '';
+  const a=c.apply, gc=P&&P.gc;
+  /* 按過一次就換成「已套用」：建議是依同一杯算出來的，連按兩次會無聲多漂一格，
+     而文字從頭到尾都寫著「調細 1 格」，看不出已經動過。 */
+  if(appliedKey && appliedKey===calibKey(c))
+    return `<br>✅ 已套用${gc?`，目前 ${gc.clicks} 刻度`:''}。想再調就等下一杯喝完再說。`;
+  if(a.kind==='grind'){
+    if(S.master==='dripbag')return '<br>⚠ 但濾掛是<b>預磨</b>的，上面講的研磨調整做不到。改用水溫與注水節奏補償 —— 這個手法的引擎已經自動把水溫 +1°C、水柱放到最細、分三段拉長接觸時間。';
+    if(gc&&clicksAfter(gc,a.delta)===gc.clicks)return '';   // 邊界，clickLine 已經警告過
+    if(clamp(S.grindAdj+a.delta,-4,4)===S.grindAdj)
+      return '<br>研磨校準已經到 ±4 格的上限。再調下去代表問題不在研磨 —— 先檢查水溫、豆子新鮮度與粉量。';
+  }
+  if(a.kind==='ratio'&&P&&P.ratioOwned)
+    return '<br>這個手法的粉水比由手法本身鎖定，不能從這裡改 —— 請用手法卡片裡的濃度下拉調整。';
+  if(a.kind==='temp'&&Math.round(clamp(S.tempAdj+a.delta,-4,4))===S.tempAdj)
+    return '<br>水溫校準已經到 ±4°C 的上限，再降下去只會萃取不足。';
+  return `<br><button class="btn-mini apply-calib" data-kind="${a.kind}" data-delta="${a.delta}" data-key="${esc(calibKey(c))}">一鍵套用：${esc(a.label)}</button>`;
 }
 function renderCalibration(){
   const box=$('calibBox');if(!box)return;
-  const c=calibrate(loadLogs()[0]);
+  const l=loadLogs()[0], c=calibrate(l);
   if(!c){box.style.display='none';return;}
   box.style.display='block';
-  /* 有校正過磨豆機就把「一格」講成實際刻度 —— 這是整個校準迴圈最後一哩 */
-  const gc=P&&P.gc;
-  let line='';
-  if(gc&&c.dir){
-    const amt=c.half?Math.max(1,Math.round(gc.step/2)):gc.step;
-    const to=clamp(gc.clicks+c.dir*amt,gc.min,gc.max);
-    line = to===gc.clicks
-      ? `<br>⚠ 你的磨豆機已經到範圍邊界（${gc.clicks} 刻度），這個方向轉不動了 —— 改調上面其他項目，或放寬手沖刻度範圍。`
-      : `<br>👉 你的磨豆機：<b>從 ${gc.clicks} 轉到 ${to} 刻度</b>（${c.dir<0?'調細':'調粗'} ${amt} 格）。`;
-  }
-  box.innerHTML=`🎯 <b>依上一杯校準</b>：${c.t}。<br>${c.b}${line}`;
+  /* 這張卡片講的是「上一杯」，但套用會寫到「現在這組設定」上。
+     兩者的豆況不同就只給文字 —— 否則會把為 A 豆算出來的偏移寫到 B 豆上。 */
+  const cfg=l&&l.cfg, same=cfg&&`${cfg.roast}|${cfg.process}|${cfg.origin}`===beanKey();
+  const tail = same ? applyHint(c)
+    : (cfg?'<br>上一杯的豆況跟現在不同，所以這裡不提供一鍵套用 —— 把豆子選回去就會出現。':'');
+  box.innerHTML=`🎯 <b>依上一杯校準</b>：${c.t}。<br>${c.b}${same?clickLine(c,P&&P.gc):''}${tail}`;
 }
 
 function loadLogs(){try{return JSON.parse(localStorage.getItem(LOG_KEY))||[];}catch(e){return[];}}
@@ -2305,7 +2490,7 @@ function renderLogs(){
         <span class="log-name">${logTitle(l)}</span>
         <span class="log-star">${'★'.repeat(l.rating)||'—'}</span>
       </div>
-      <div class="log-meta">${l.date} ｜ ${esc(l.roast)}·${esc(l.master)} ｜ ${l.temp}°C / ${l.total}g${l.secs?` ｜ ${fmt(l.secs)}`:''}${VERDICT_TXT[l.verdict]?` ｜ ${VERDICT_TXT[l.verdict]}`:''}</div>
+      <div class="log-meta">${l.date} ｜ ${esc(l.roast)}·${esc(l.master)} ｜ ${l.temp}°C / ${l.total}g${l.secs?` ｜ ${fmt(l.secs)}`:''}${VERDICT_TXT[l.verdict]?` ｜ ${VERDICT_TXT[l.verdict]}`:''}${BODY_TXT[l.body]?` ｜ ${BODY_TXT[l.body]}`:''}</div>
       <div class="log-acts">
         ${l.cfg?`<button class="btn-mini recall" data-i="${i}">重現</button>`:''}
         <button class="btn-mini rename" data-i="${i}">改名</button>
@@ -2344,24 +2529,61 @@ $('stars').addEventListener('click',e=>{
   const v=+e.target.dataset.v;if(!v)return;rating=v;
   [...$('stars').children].forEach((s,i)=>s.classList.toggle('lit',i<v));
 });
-/* 這杯偏酸還偏苦：下一杯的校準建議完全建立在這個回饋上 */
+/* 當場回饋：選完就立刻告訴他下一杯要怎麼改，不必等回設定頁才看到。
+   風味、濃度、實際時間任何一個變了都要重算 —— 時間正是決定「流速太快／太慢」
+   的那個輸入，改了時間卻不重算，結論就會停在舊的。 */
+function refreshAdjust(){
+  const box=$('fsAdjust');if(!box)return;
+  const c=calibrate({verdict,body:bodyVerdict,secs:brewSecs,plan:P.plan});
+  if(!c){box.classList.remove('show');box.innerHTML='';return;}
+  const nudge = (verdict&&!bodyVerdict) ? '<br><span style="opacity:.7">↑ 順便選一下濃度，建議會準很多 —— 酸苦是萃取率、濃淡是濃度，兩件事。</span>' : '';
+  box.innerHTML=`<b>${c.t}。</b><br>${c.b}${clickLine(c,P&&P.gc)}${applyHint(c)}${nudge}`;
+  box.classList.add('show');
+  /* 完成面板是整頁捲動的，小螢幕上建議會長在摺線下方 —— 不捲過去的話
+     使用者點完 chip 什麼都沒看到，體感就是「這顆按鈕壞了」。 */
+  box.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
 $('verdictRow').addEventListener('click',e=>{
   const v=e.target.dataset.v;if(!v)return;verdict=v;
   [...$('verdictRow').children].forEach(c=>c.classList.toggle('on',c.dataset.v===v));
-  /* 當場回饋：選完偏哪一邊，立刻告訴他下一杯要怎麼改，不必等回設定頁才看到 */
-  const c=calibrate({verdict:v,secs:brewSecs,plan:P.plan});
-  const box=$('fsAdjust');
-  if(!c){box.classList.remove('show');return;}
-  let line='';
-  if(P.gc&&c.dir){
-    const amt=c.half?Math.max(1,Math.round(P.gc.step/2)):P.gc.step;
-    const to=clamp(P.gc.clicks+c.dir*amt,P.gc.min,P.gc.max);
-    line = to===P.gc.clicks
-      ? `<br>⚠ 磨豆機已經到範圍邊界（${P.gc.clicks} 刻度），這個方向轉不動了。`
-      : `<br>👉 下一杯磨豆機<b>從 ${P.gc.clicks} 轉到 ${to} 刻度</b>。`;
+  $('bodyWrap').classList.remove('hide');   // 第二軸到這一刻才有意義
+  refreshAdjust();
+});
+$('bodyRow').addEventListener('click',e=>{
+  const v=e.target.dataset.b;if(!v)return;
+  bodyVerdict = bodyVerdict===v ? '' : v;   // 再按一次＝取消，退回單軸
+  [...$('bodyRow').children].forEach(c=>c.classList.toggle('on',c.dataset.b===bodyVerdict));
+  refreshAdjust();
+});
+/* 一鍵套用：只動一個變數，改完立刻重算並把兩個出口都刷新，讓人看得到狀態真的變了 */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.apply-calib');if(!b)return;
+  const kind=b.dataset.kind, d=+b.dataset.delta;
+  if(kind==='grind'){
+    const gc=P&&P.gc;
+    /* 有刻度時用「實際會落到的刻度」回推格數 —— 直接加 d 會在半格與捨入的情況
+       跟畫面上那個數字差一刻度，使用者會看到「說轉到 23，套用後顯示 24」。 */
+    let g=d;
+    if(gc){
+      const to=clicksAfter(gc,d);
+      if(to===gc.clicks){toast('磨豆機已經到範圍邊界，這個方向轉不動了');return;}
+      g=(to-gc.clicks)/gc.step;
+    }
+    S.grindAdj=clamp(+(S.grindAdj+g).toFixed(2),-4,4);
+    S.grindAdjFor=beanKey();   // 記下這個校準是為哪支豆調的
   }
-  box.innerHTML=`<b>${c.t}。</b><br>${c.b}${line}`;
-  box.classList.add('show');
+  else if(kind==='temp') S.tempAdj=Math.round(clamp(S.tempAdj+d,-4,4));
+  else if(kind==='ratio'){
+    if(P&&P.ratioOwned){toast('這個手法的粉水比由手法鎖定，改不了');return;}
+    S.ratioOverride=clamp((S.ratioOverride||P.ratio)+d,8,20);
+    $('ratioLock').value=S.ratioOverride;
+  }else return;
+  if(kind==='temp')S.grindAdjFor=S.grindAdjFor||beanKey();
+  appliedKey=b.dataset.key||'';
+  calc();                 // 重算藍圖並存檔
+  renderCalibration();    // 設定頁那張卡片的刻度換算要跟著更新
+  refreshAdjust();        // 完成面板那一份也是
+  toast('已套用，下一杯就是調整後的參數');
 });
 /* 計時器只到「最後一段結束」，實際滴完常常晚幾十秒，所以留一個手動修正 */
 $('secsEdit').onclick=()=>{
@@ -2372,6 +2594,7 @@ $('secsEdit').onclick=()=>{
   const s=m?(+m[1])*60+(+m[2]):parseInt(inp,10);
   if(!isFinite(s)||s<=0||s>1800){toast('時間格式看不懂，請輸入如 3:10');return;}
   brewSecs=s;$('secsChip').textContent=fmt(brewSecs);
+  refreshAdjust();   // 時間是「流速太快／太慢」的輸入，改了就得重算，否則建議是舊的
 };
 $('saveLog').onclick=()=>{
   const logs=loadLogs();
@@ -2379,13 +2602,13 @@ $('saveLog').onclick=()=>{
   const entry={date:new Date().toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
     roast:ROASTS[S.roast].name,master:(MX[S.master]||MASTERS.threepour).name.split('（')[0],
     temp:P.temp,total:P.total,rating,cfg:snapshot(),
-    /* 校準迴圈需要的三個欄位：實際總時間、預估總時間、這杯偏哪一邊 */
-    secs:brewSecs||0, plan:P.plan||0, verdict, ratio:P.ratio, grind:P.grind};
+    /* 校準迴圈需要的四個欄位：實際總時間、預估總時間、這杯偏哪一邊、濃度如何 */
+    secs:brewSecs||0, plan:P.plan||0, verdict, body:bodyVerdict, ratio:P.ratio, grind:P.grind};
   if(nm)entry.name=nm;
   logs.unshift(entry);
   if(writeLogs(logs)){
     $('brewName').value='';
-    verdict='';[...$('verdictRow').children].forEach(c=>c.classList.remove('on'));
+    resetVerdict();
     toast(entry.verdict?'已儲存，下次開啟會給你校準建議':'已儲存至沖煮日誌');
     /* 存完就把人帶回首頁：校準建議與「上次沖煮」剛剛就更新在那裡，
        留在導航頁只會看到一張寫著「先不記錄，返回」的面板，像沒存成功。 */
@@ -2467,6 +2690,14 @@ function readGrinder(){
   calc();
 }
 ['grName','grMin','grMax'].forEach(k=>$(k).addEventListener('input',readGrinder));
+/* 換豆子時用的：把校準迴圈累積下來的研磨與水溫偏移清掉，回到矩陣的原始建議。
+   刻意不在換烘焙度時自動歸零 —— 同一支豆子換個手法重沖，校準結果仍然有效，
+   自動清掉會讓好不容易調出來的那一格無聲消失。 */
+$('calibReset').onclick=()=>{
+  if(!S.grindAdj&&!S.tempAdj){toast('目前沒有校準偏移');return;}
+  S.grindAdj=0;S.tempAdj=0;S.grindAdjFor=null;appliedKey='';
+  calc();renderCalibration();toast('校準偏移已歸零');
+};
 $('grClear').onclick=()=>{
   $('grName').value='';$('grMin').value='';$('grMax').value='';
   S.grinder=null;calc();toast('已清除磨豆機設定');
