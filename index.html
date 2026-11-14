@@ -66,11 +66,16 @@ header.topbar p{display:none}
 .card h2 .no{font-family:var(--mono);font-size:.7rem;color:var(--bg);background:var(--crema);border-radius:6px;padding:2px 7px;font-weight:700}
 label{display:block;font-size:.72rem;color:var(--muted);margin:12px 0 5px}
 label b{color:var(--crema);font-weight:600}
-select,input[type=number]{
+select,input[type=number],input[type=date]{
   width:100%;background:var(--panel2);color:var(--text);
   border:1px solid var(--line);border-radius:12px;padding:13px 12px;font-size:1rem;
   appearance:none;-webkit-appearance:none;outline:none;
 }
+/* iOS 的日期欄位預設是白底黑字，不跟著上面那條走 —— 不蓋掉會在深色介面上亮成一塊。
+   日曆圖示同樣要自己上色，否則在深色底上幾乎看不見。 */
+input[type=date]{min-height:48px;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;color:var(--text)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(68%) sepia(32%) saturate(680%) hue-rotate(344deg);cursor:pointer}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23d89b5a' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
 select:focus,input:focus{border-color:var(--crema)}
 .hint{font-size:.7rem;color:var(--muted);margin-top:6px;line-height:1.55}
@@ -418,6 +423,7 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <div class="reco" id="bypassBox" style="display:none"></div>
     <div class="reco" id="icedBox2" style="display:none"></div>
     <div class="reco" id="preRoomBox" style="display:none"></div>
+    <div class="reco" id="freshBox" style="display:none"></div>
     <div class="reco" id="milkBox" style="display:none"></div>
     <details style="margin-top:10px">
       <summary>運算軌跡與參數依據</summary>
@@ -504,7 +510,14 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
   <div id="paneBean" class="hide" role="tabpanel" aria-labelledby="tabBean">
   <div class="card">
     <h2><span class="no">豆</span>這包豆</h2>
-    <label>烘焙度（基礎溶解率）</label>
+
+    <!-- 烘豆商各家自訂的焙度刻度。選了會把下面的焙度一起設好，
+         但焙度下拉仍然保留，想直接選淺／中／深也可以。 -->
+    <label>烘豆商刻度（選填 · 看包裝上的數字）</label>
+    <select id="roasterScale"></select>
+    <div class="hint" id="scaleHint"></div>
+
+    <label style="margin-top:16px">烘焙度（基礎溶解率）</label>
     <select id="roast"></select>
 
     <label>處理法（細胞壁完整度 → 溶解率修正）</label>
@@ -514,6 +527,22 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
     <label>產區風味（預期風味 → 水溫微調）</label>
     <select id="origin"></select>
     <div class="hint clamp" id="originHint"></div>
+
+    <!-- 烘焙日與保存方式：排氣狀態與香氣衰退都看這兩個，
+         但刻意不拿它們自動改任何沖煮參數（找不到有來源的換算）。 -->
+    <label style="margin-top:16px">烘焙日（選填 · 看包裝上的烘焙日期）</label>
+    <input type="date" id="roastDate">
+
+    <label style="margin-top:12px">保存方式</label>
+    <select id="storage">
+      <option value="room">常溫保存</option>
+      <option value="frozen">冷凍保存</option>
+    </select>
+    <div id="thawWrap" class="hide">
+      <label style="margin-top:12px">退冰日（冷凍的那幾天不算進老化）</label>
+      <input type="date" id="thawDate">
+    </div>
+    <div class="hint" id="freshHint"></div>
   </div>
   </div>
 
@@ -794,6 +823,30 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
         <li><b>來源</b>：這是使用者自己在試的手法，<b>不在任何逐字稿或其他來源裡</b>，也沒有對照實驗佐證。寫進來是為了讓流程完整，不代表它已被驗證。</li>
       </ul>
 
+      <div class="kb-h">看懂包裝上的字</div>
+      <ul class="kb">
+        <li><b>烘豆商自己的刻度</b>：有些店不寫「淺焙／中焙」，直接印一個數字。例如 <b>Daily Wu's Coffee</b> 是 <b>9＝淺焙、11＝中淺焙、13＝中焙、15＝中深焙</b>。他們把它寫成「9℃」，<b>那個℃是店家的標法，不是沖煮水溫</b>。各家定義不同，沒有通用換算 —— 設定頁「這包豆」有「烘豆商刻度」可以直接選，選了焙度就自動設好。</li>
+        <li><b>處理法該歸到哪一類</b>：包裝上的寫法比 App 的選項多很多，對照如下 ——<br>
+          <b>水洗／半水洗／蜜處理前段</b> → 選「水洗」；<br>
+          <b>日曬／蜜處理</b> → 選「日曬」；<br>
+          <b>酒香／酒桶發酵／紅酒／厭氧／雙重發酵／特殊發酵</b> → 選「<b>厭氧 / 酒香 / 特殊發酵</b>」。<br>
+          最後這一類最容易選錯：包裝寫「日曬酒香處理法」，照字面會選成日曬，但<b>酒香是延長發酵、細胞壁分解得多，屬於易萃取那一類，水溫要低 2°C</b>。選錯就是整杯沖得太熱。</li>
+        <li><b>分級 G1～G5</b>（衣索比亞常見）：數字越大瑕疵率越高。G1 最乾淨、G4／G5 通常是日曬豆的常見等級。它影響的是<b>一致性與乾淨度</b>，不是沖煮參數 —— 所以 App 不拿它改任何東西，只是預期上別把它當競標豆看。</li>
+        <li><b>烘焙日期</b>：這是包裝上最被低估的一項，見下一節。</li>
+        <li><b>有些店會多印一個時間（例如 0:53、1:10、1:24）</b>：若它隨焙度遞增，<b>看起來是一爆後的發展時間</b>（越長＝越往後發展、酸度越低、body 越厚）。但這是推測、沒辦法向店家確認，所以 <b>App 不拿它做任何運算</b>，寫在這裡只是讓你知道那欄可能是什麼。</li>
+      </ul>
+
+      <div class="kb-h">烘焙日期與保存（排氣與香氣都看這個）</div>
+      <ul class="kb">
+        <li><b>剛烘好的豆子會大量排出 CO₂</b>。烘後 1～2 天排氣最猛，悶蒸時粉面會隆起成漢堡狀，水甚至會被頂開 —— 這時悶蒸要多給一點水、多等一下。3～10 天排氣穩定，一般公認的風味高峰就在這一段。</li>
+        <li><b>超過 25 天</b>排氣基本停了，悶蒸不再膨脹，香氣與酸質也開始明顯走下坡。覺得喝起來平淡，可以研磨調細半格或水溫 +1°C 補回來。</li>
+        <li><b>單向閥（排氣孔）的作用常被誤解</b>：它是<b>讓 CO₂ 出去、不讓氧氣進來</b>的單向閥，為剛烘好排氣很猛的豆子設計（沒有閥袋子會脹起來）。<b>它不是讓香氣跑掉的洞，所以「沒有排氣孔」並不會比較保香。</b></li>
+        <li><b>真正決定香氣流失速度的是四件事</b>：密封程度、開封次數、溫度、光線。夾鏈袋在密封度上通常輸給熱封袋，而且每開一次就換一次空氣進去。唯一有利的點是剛烘好時 CO₂ 會在袋內堆積、把氧氣擠走 —— 但那要完全不開封才有效，而且排氣停了就沒有這層保護了。</li>
+        <li><b>冷凍是唯一真正有效的保存手段</b>，等於把養豆的時鐘按暫停。要訣：<b>分成一次喝得完的份量</b>，<b>一包只退冰一次</b>（反覆進出冷凍，每次都會在豆子表面凝一層水），而且<b>整包回到室溫再開封</b> —— 沒回溫就開，冷豆會把空氣中的水氣吸到表面。</li>
+        <li><b>冷藏室（一般冰箱）是最糟的選項</b>：溫度不夠低、濕度高，而且咖啡豆很會吸味道，會把冰箱的味道一起帶進杯子裡。</li>
+        <li><b>App 裡怎麼配合</b>：設定頁「這包豆」可以填烘焙日與保存方式。選冷凍會多出「退冰日」，藍圖就會同時顯示<b>烘後第幾天</b>（香氣的絕對上限）與<b>常溫第幾天</b>（排氣與氧化的實際進度）。<b>這兩個數字只拿來給建議，不會自動改動任何沖煮參數</b> —— 養豆天數和水溫之間的換算找不到有來源的配方，不如把判斷留給你。</li>
+      </ul>
+
       <div class="kb-h">沖完之後</div>
       <ul class="kb">
         <li><b>下壺要搖勻再喝</b>：萃取的前段與後段濃度差很多，直接倒出來每一口都不一樣。輕輕搖晃（量大時用攪拌棒）讓風味一致，這一秒的動作影響比很多手法細節都大。</li>
@@ -968,6 +1021,10 @@ details summary::before{content:"▸ "}details[open] summary::before{content:"�
 const ROASTS = {
   'ultra-light':{name:'極淺焙',baseTemp:94,grind:'偏細（細砂糖）',baseRatio:16},
   'light':      {name:'淺焙',  baseTemp:92,grind:'中細（二號砂糖）',baseRatio:15},
+  /* 中淺焙：很多烘豆商（含使用者買的這家）有這一級，但這三個數字是在淺焙與中焙之間
+     內插出來的，不是來自任何配方表。水溫取 91 而不是中點 90.5，因為多數烘豆商口中的
+     「中淺焙」比較靠近淺焙。使用者要調隨時可以改。 */
+  'med-light':  {name:'中淺焙',baseTemp:91,grind:'中細偏粗（二號砂糖與海鹽之間）',baseRatio:14.8},
   'medium':     {name:'中焙',  baseTemp:89,grind:'中等（海鹽）',baseRatio:14.5},
   'med-dark':   {name:'中深焙',baseTemp:87,grind:'中粗（粗鹽偏細）',baseRatio:14},
   'dark':       {name:'深 / 極深焙',baseTemp:84,grind:'中粗（粗鹽）',baseRatio:13},
@@ -981,13 +1038,16 @@ const ROASTS = {
       所以不內建任何機型對照表：各家刻度與微米的關係我無從驗證，
       由使用者輸入自己磨豆機的手沖範圍才是唯一準確的做法。
    ============================================================ */
-const ROAST_COARSE={'ultra-light':0.20,'light':0.35,'medium':0.50,'med-dark':0.62,'dark':0.72};
+const ROAST_COARSE={'ultra-light':0.20,'light':0.35,'med-light':0.42,'medium':0.50,'med-dark':0.62,'dark':0.72};
 const MASTER_COARSE={tetsu46:0.92,matsuya:0.92,clever:0.72,hoffmann:0.25,latte:0.10};  // 手法自帶研磨度時的絕對值
 const MASTER_COARSE_DELTA={iced:-0.06,rao:-0.06,balance24:-0.06,slowspiral:-0.06};                                      // 相對烘焙度基準微調
 const PROCESSES = {
   'washed':   {name:'水洗 / 高海拔（Level 1 極難萃取）',tempMod:+1,note:'細胞壁堅硬完整，需高溫＋較強水柱攪拌。',flow:'加大水柱攪拌'},
   'natural':  {name:'日曬 / 蜜處理（Level 2 正常萃取）',tempMod:0, note:'維持基礎水溫、標準繞圈即可。',flow:'標準繞圈'},
-  'anaerobic':{name:'厭氧 / 特殊發酵（Level 3 易萃取）',tempMod:-2,note:'細胞壁已被細菌分解，降溫並減少攪拌，以乾淨度優先。',flow:'水柱放輕柔'},
+  /* 名稱含「酒香」是因為包裝上常寫「日曬酒香處理法」「酒桶發酵」——
+     那是延長發酵，細胞壁分解程度屬於這一類，不是一般日曬。沒寫出來的話
+     使用者會照字面選「日曬」，水溫就高了 2°C。 */
+  'anaerobic':{name:'厭氧 / 酒香 / 特殊發酵（Level 3 易萃取）',tempMod:-2,note:'細胞壁已被細菌分解，降溫並減少攪拌，以乾淨度優先。',flow:'水柱放輕柔'},
   'decaf':    {name:'低咖啡因 Decaf（Level 4 極易萃取）',tempMod:-3,note:'結構極鬆散，極易過萃，建議同時調粗研磨。',flow:'中心溫和注水'},
 };
 const ORIGINS = {
@@ -1070,7 +1130,79 @@ function fillSelect(sel,db){
 /* ============================================================
    核心運算引擎
    ============================================================ */
-const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null, grinder:null, preRoom:false, grindAdj:0, tempAdj:0, grindAdjFor:null };
+const S = { dose:20, roast:'light', process:'natural', origin:'africa', dripper:'v60', master:'tetsu46', tweak:0, ratioOverride:null, grinder:null, preRoom:false, grindAdj:0, tempAdj:0, grindAdjFor:null,
+            roastDate:null, storage:'room', thawDate:null, roasterScale:null };
+
+/* 烘豆商各家自訂的焙度刻度 —— 包裝上那個數字各家定義不同，沒有通用換算。
+   鍵是店名，值是「刻度 → 本 App 的焙度」。要加別家就在這裡多一行，介面不必動。
+   （這家把刻度寫成「9℃／11℃」，那個℃是他們的標法，不是沖煮水溫。） */
+const ROASTER_SCALES = {
+  "Daily Wu's Coffee": {9:'light', 11:'med-light', 13:'medium', 15:'med-dark'},
+};
+
+/* 養豆天數。回傳兩個各自有意義的數字，刻意不把它們混成一個「等效天數」——
+   冷凍把老化減慢多少倍沒有可靠的係數，編一個出來只會是假精度。
+     total：烘後第幾天。香氣的絕對上限，冷凍也擋不住。
+     room ：常溫第幾天（冷凍的話從退冰日算起）。決定排氣狀態與氧化速度。 */
+function beanAge(){
+  if(!S.roastDate)return null;
+  const day=86400000, t0=Date.parse(S.roastDate+'T00:00:00');
+  if(!isFinite(t0))return null;
+  const now=new Date(); const today=Date.parse(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T00:00:00`);
+  const total=Math.round((today-t0)/day);
+  if(total<0)return {bad:'烘焙日填成未來的日期了'};
+  let room=total, thawed=null;
+  if(S.storage==='frozen'&&S.thawDate){
+    const tt=Date.parse(S.thawDate+'T00:00:00');
+    if(!isFinite(tt))return {total,room};
+    if(tt<t0)return {total,bad:'退冰日早於烘焙日'};
+    if(tt>today)return {total,bad:'退冰日填成未來的日期了'};
+    thawed=Math.round((today-tt)/day); room=thawed;
+  }else if(S.storage==='frozen'){
+    return {total,frozenNoDate:true};
+  }
+  return {total,room,thawed};
+}
+/* 冷凍只在選了冷凍時才要問退冰日，常溫就把那一欄收起來 */
+function syncStorageUI(){
+  const w=$('thawWrap'); if(w)w.classList.toggle('hide',S.storage!=='frozen');
+}
+
+/* 藍圖的新鮮度說明框。日期沒填就整個隱藏，畫面與沒有這個功能時完全相同。 */
+function renderFresh(){
+  const box=$('freshBox'), hint=$('freshHint');
+  const a=beanAge();
+  if(!a){ box.style.display='none'; if(hint)hint.textContent=''; return; }
+  box.style.display='block';
+  if(a.bad){
+    box.innerHTML=`📅 <b>烘焙日期對不上</b>：${a.bad}。請重新填一次 —— 填錯的話下面的天數會是錯的。`;
+    if(hint)hint.textContent='';
+    return;
+  }
+  if(a.frozenNoDate){
+    box.innerHTML=`📅 烘後第 <b>${a.total}</b> 天。這包標成冷凍保存但還沒填退冰日 —— 補上之後才算得出常溫放了幾天（決定排氣與氧化的是那個數字）。`;
+    if(hint)hint.textContent='';
+    return;
+  }
+  const frozen = S.storage==='frozen' && a.thawed!==null && a.thawed!==undefined;
+  const head = frozen
+    ? `📅 烘後第 <b>${a.total}</b> 天 · 退冰後常溫第 <b>${a.room}</b> 天`
+    : `📅 烘後第 <b>${a.total}</b> 天`;
+  const frozenNote = frozen
+    ? `<br>冷凍的那 ${a.total-a.room} 天幾乎不算進老化 —— 排氣與氧化看的是常溫的第 ${a.room} 天。`
+    : '';
+  const old = a.total>=90 ? `<br>不過烘後已經 ${a.total} 天，即使全程冷凍，香氣仍然有上限。` : '';
+  box.innerHTML=`${head}<br>${freshNote(a.room)}${frozenNote}${old}`;
+  if(hint)hint.textContent='';
+}
+
+/* 這些天數區間是一般通則，不是有來源的配方 —— 所以只拿來給文字建議，不動任何參數。 */
+function freshNote(room){
+  if(room<=2) return '排氣正猛。悶蒸會隆起成漢堡狀、水容易被頂開 —— 悶蒸多給一點水、多等一下再進下一段。';
+  if(room<=10)return '排氣穩定下來了，一般公認的風味高峰就在這一段。';
+  if(room<=25)return '仍然好喝，香氣開始緩慢衰退。';
+  return '排氣已經停了，悶蒸不會膨脹。覺得喝起來平淡的話，研磨調細半格或水溫 +1°C 補回來。';
+}
 /* 校準偏移是針對某一支豆調出來的。換豆之後它不會自動失效（同一支豆換手法重沖仍然有效），
    但一定要讓使用者看見它還在 —— 靜默沿用到別支豆上就是那種最難抓的錯。 */
 const beanKey=()=>`${S.roast}|${S.process}|${S.origin}`;
@@ -1216,7 +1348,7 @@ function calc(){
 
   // 5c) 防呆警示
   const warns=[];
-  if(S.master==='osmotic'&&(S.roast==='ultra-light'||S.roast==='light'))
+  if(S.master==='osmotic'&&(S.roast==='ultra-light'||S.roast==='light'||S.roast==='med-light'))
     warns.push('日系點滴法是為中深焙設計的：低溫＋極慢流速用在淺焙上，幾乎必然萃取不足而尖酸。建議改用 4:6 法或 Hoffmann。');
   if(S.master==='latte'&&S.dose>=30)
     warns.push(`粉量 ${S.dose}g 屬超厚粉層，此時「再調細」會讓粉層堵塞、流速停滯而萃出乾澀。請維持中細，改用縮短粉水比來提升濃度。`);
@@ -1525,6 +1657,7 @@ function renderBlueprint(){
     <b>秤不用歸零</b> —— 倒完常溫水就直接接著倒熱水，導航頁給的每一個數字都是<b>秤面該有的讀數</b>，最後停在 ${P.preRoom.all}g 就是 1:${P.ratio}。<br>
     常溫水那段<b>不計時</b>，倒多少以<b>水位高過粉面約 0.5 公分</b>為準；${P.preRoom.g}g 只是粉重 2 倍的估計值。等它自然滴完再按開始，碼錶從熱水第一滴算起。`;
   }else pb.style.display='none';
+  renderFresh();syncScale();
   const ib=$('icedBox2');
   if(P.iced){
     ib.style.display='block';
@@ -2321,7 +2454,17 @@ function applySettings(d,silent){
   S.grindAdj    = clamp(+d.grindAdj||0,-4,4);
   S.tempAdj     = Math.round(clamp(+d.tempAdj||0,-4,4));
   S.grindAdjFor = d.grindAdjFor||null;
+  /* 豆況日期同理：重現一筆舊日誌時不該把現在這包豆的日期留著套上去 */
+  S.roastDate    = d.roastDate||null;
+  S.thawDate     = d.thawDate||null;
+  S.storage      = d.storage==='frozen' ? 'frozen' : 'room';
+  S.roasterScale = d.roasterScale||null;
   $('tglPreRoom').classList.toggle('on',S.preRoom);
+  $('roastDate').value=S.roastDate??'';
+  $('thawDate').value=S.thawDate??'';
+  $('storage').value=S.storage;
+  $('roasterScale').value=S.roasterScale??'';
+  syncStorageUI();
   $('dose').value=S.dose;$('tweak').value=S.tweak;$('ratioLock').value=S.ratioOverride??'';
   $('grName').value=S.grinder?.name??'';
   $('grMin').value=S.grinder?.min??'';
@@ -2633,6 +2776,39 @@ $('saveLog').onclick=()=>{
 /* ============================================================
    初始化與事件綁定
    ============================================================ */
+/* 烘豆商刻度：選項是「店名 刻度 → 本 App 的焙度」，value 存成「店名|刻度」。
+   選了只是幫你把焙度設好，焙度下拉仍然可以自己改。 */
+$('roasterScale').innerHTML='<option value="">不使用（直接選下面的焙度）</option>'+
+  Object.entries(ROASTER_SCALES).flatMap(([shop,map])=>
+    Object.entries(map).map(([n,rk])=>
+      `<option value="${esc(shop)}|${n}">${esc(shop)} ${n}℃ → ${ROASTS[rk].name}</option>`)).join('');
+function scaleRoast(v){
+  if(!v)return null;
+  const i=v.lastIndexOf('|'); if(i<0)return null;
+  return (ROASTER_SCALES[v.slice(0,i)]||{})[v.slice(i+1)]||null;
+}
+/* 焙度被別的地方改掉時，刻度欄位不能繼續宣稱自己還對得上 */
+function syncScale(){
+  if(S.roasterScale && scaleRoast(S.roasterScale)!==S.roast){ S.roasterScale=null; $('roasterScale').value=''; }
+  $('scaleHint').textContent = S.roasterScale
+    ? '焙度已依這個刻度設好。想自己調就直接改下面的焙度，這一欄會自動清掉。'
+    : '包裝上如果印的是數字（例如 11℃），在這裡選，下面的焙度就會自動設好。各家刻度定義不同，沒有通用換算。';
+}
+$('roasterScale').addEventListener('change',()=>{
+  const v=$('roasterScale').value, rk=scaleRoast(v);
+  S.roasterScale = rk ? v : null;
+  if(rk){ S.roast=rk; $('roast').value=rk; }
+  calc();
+});
+['roastDate','thawDate'].forEach(k=>$(k).addEventListener('change',()=>{
+  S[k]=$(k).value||null; calc();
+}));
+$('storage').addEventListener('change',()=>{
+  S.storage=$('storage').value;
+  if(S.storage!=='frozen'){S.thawDate=null;$('thawDate').value='';}
+  syncStorageUI(); calc();
+});
+
 fillSelect($('roast'),ROASTS);fillSelect($('process'),PROCESSES);
 fillSelect($('origin'),ORIGINS);fillSelect($('dripper'),DRIPPERS);refreshMasters();fillSelect($('master'),MX);
 $('roast').value=S.roast;$('process').value=S.process;$('origin').value=S.origin;
@@ -2655,6 +2831,7 @@ $('dose').addEventListener('input',()=>{
 });
 ['roast','process','origin','dripper','master'].forEach(k=>$(k).addEventListener('change',()=>{
   S[k]=$(k).value;
+  if(k==='roast')syncScale();   // 手動改焙度就不能再說「這是依刻度設的」
   /* 濾掛掛耳市售規格多為 10–12g，粉量過大會塞爆掛耳，所以自動降到 12g。
      但離開濾掛時一定要還原 —— 否則點進去看一眼再切回三刀流，
      就會在毫無提示的情況下用 12g 沖，而進去時的那則 toast 早就消失了。
